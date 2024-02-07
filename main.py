@@ -30,6 +30,37 @@ detection_interval = 0.5  # Minimum interval between detections
 
 stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
+# write beginning of musicxml sheet
+template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n", 
+            "<!DOCTYPE score-partwise PUBLIC\n", 
+            "\"-//Recordare//DTD MusicXML 4.0 Partwise//EN\"\n",
+            "\"http://www.musicxml.org/dtds/partwise.dtd\">\n", 
+            "<score-partwise version=\"4.0\">\n",
+            "<part-list>\n",
+            "<score-part id=\"P1\">\n",
+            "<part-name>Music</part-name>\n",
+            "</score-part>\n",
+            "</part-list>\n",
+            "<part id=\"P1\">\n",
+            "<measure number=\"1\">\n",
+            "<attributes>\n",
+            "<divisions>1</divisions>\n",
+            "<key>\n",
+            "<fifths>0</fifths>\n",
+            "</key>\n",
+            "<time>\n",
+            "<beats>4</beats>\n",
+            "<beat-type>4</beat-type>\n",
+            "</time>\n",
+            "<clef>\n",
+            "<sign>G</sign>\n",
+            "<line>2</line>\n",
+            "</clef>\n",
+            "</attributes>\n"]
+
+with open("sheet.musicxml", "w") as file:
+        file.writelines(template)
+
 def calibrate_notes(stream, note_frequencies):
     calibration_data = {}
     print("Starting calibration...")
@@ -62,7 +93,42 @@ def calibrate_notes(stream, note_frequencies):
 # Load calibration data from file
 def load_calibration():
     with open("note_calibration.json", 'r') as f:
-        return json.load(f)
+        return json.load(f)  
+
+# START OF MUSICXML GENERATOR
+def generate(note):
+    template_ending = ["</measure>\n",
+                    "</part>\n",
+                        "</score-partwise>"]
+
+    note_template = ["<note>\n",
+                    "<pitch>\n"]
+
+    note_ending = ["</pitch>\n",
+                "<duration>1</duration>\n",
+                "<type>quarter</type>\n",
+                "</note>\n"]
+
+    measures = 1
+
+    beats = 0
+
+    with open("sheet.musicxml", "a") as file:
+        # determine if measure is full
+        if beats > 3: # create a new measure
+            file.write("</measure>\n")
+            measures += 1
+            file.write("<measure number=\"" + str(measures) + "\">\n") # create a new measure
+            beats = 0
+
+        file.writelines(note_template) # add note_template
+        file.writelines(["<step>" + str(note) + "</step>\n", "<octave>4</octave>\n"]) # add the note information
+        beats += 1
+        file.writelines(note_ending) # write note_ending
+
+    # write template_ending
+    file.writelines(template_ending)
+# END OF MUSICXML GENERATOR
 
 def detect_note(frequency, magnitude, calibration_data):
     global last_detection_time
@@ -110,6 +176,7 @@ try:
         note = detect_note(peak_frequency, peak_magnitude, calibration_data)
         if note and note != "Silence":
             print(f"Detected Note: {note}")
+            generate(note)
 
 except KeyboardInterrupt:
     print("Stopping...")
