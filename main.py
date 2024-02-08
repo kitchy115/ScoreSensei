@@ -4,6 +4,7 @@ import keyboard
 import time
 import json
 import os
+import time
 
 # 4th octive frequencies and notes
 note_frequencies = {
@@ -96,23 +97,15 @@ def load_calibration():
         return json.load(f)  
 
 # START OF MUSICXML GENERATOR
-def generate(note):
-    template_ending = ["</measure>\n",
-                    "</part>\n",
-                        "</score-partwise>"]
-
+def generate(note, measures, beats):
     note_template = ["<note>\n",
                     "<pitch>\n"]
 
     note_ending = ["</pitch>\n",
-                "<duration>1</duration>\n",
-                "<type>quarter</type>\n",
-                "</note>\n"]
-
-    measures = 1
-
-    beats = 0
-
+                   "<duration>1</duration>\n",
+                   "<type>quarter</type>\n",
+                   "</note>\n"]
+    
     with open("sheet.musicxml", "a") as file:
         # determine if measure is full
         if beats > 3: # create a new measure
@@ -125,9 +118,8 @@ def generate(note):
         file.writelines(["<step>" + str(note) + "</step>\n", "<octave>4</octave>\n"]) # add the note information
         beats += 1
         file.writelines(note_ending) # write note_ending
-
-    # write template_ending
-    file.writelines(template_ending)
+    
+    return measures, beats
 # END OF MUSICXML GENERATOR
 
 def detect_note(frequency, magnitude, calibration_data):
@@ -157,6 +149,14 @@ if not os.path.exists(calibration_file):
 calibration_data = load_calibration()
 
 print("Listening for notes. Press 'q' to quit.")
+measures = 1
+beats = 0
+cur_time = time.time()
+beat_time = 1 # arbitrary number, will later derive from bpm
+last_note = None
+template_ending = ["</measure>\n",
+                   "</part>\n",
+                   "</score-partwise>"]
 try:
     while True:
         if keyboard.is_pressed('q'):
@@ -174,13 +174,17 @@ try:
 
         # Detect note based on peak frequency, magnitude, and calibration
         note = detect_note(peak_frequency, peak_magnitude, calibration_data)
-        if note and note != "Silence":
+        if note and note != "Silence" and (note != last_note or time.time() - cur_time > beat_time):
             print(f"Detected Note: {note}")
-            generate(note)
+            measures, beats = generate(note, measures, beats)
+            cur_time = time.time()
+            last_note = note
 
 except KeyboardInterrupt:
     print("Stopping...")
 finally:
     stream.stop_stream()  # Stop the audio stream
     stream.close()  # Close the audio stream
+    with open("sheet.musicxml", "a") as file:
+        file.writelines(template_ending) # write template_ending
     p.terminate()  # Terminate PyAudio session
