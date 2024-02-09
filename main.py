@@ -83,7 +83,13 @@ def generate(note, octave, beat, measure):
             file.write("<measure number=\"" + str(measure) + "\">\n") # create a new measure
             beat = 0
         file.writelines(note_template) # add note_template
-        file.writelines(["<step>" + str(note) + "</step>\n", "<octave>" + str(octave) + "</octave>\n"]) # add the note information
+        file.write("<step>" + str(note[0]) + "</step>\n") # add the note information
+        if len(note) > 1: # check if note is sharp/flat
+            if note[1] == "#":
+                file.write("<alter>1</alter>\n")
+            else:
+                file.write("<alter>-1</alter>\n")
+        file.write("<octave>" + str(octave) + "</octave>\n")
         beat += 1
         file.writelines(note_ending) # write note_ending
     
