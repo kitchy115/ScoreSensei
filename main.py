@@ -1,5 +1,6 @@
 from pygame import midi
 import keyboard
+import time
 
 template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n", 
             "<!DOCTYPE score-partwise PUBLIC\n", 
@@ -35,104 +36,108 @@ template_ending = ["</measure>\n",
 note_template = ["<note>\n",
                  "<pitch>\n"]
 
-note_ending = ["</pitch>\n",
-               "<duration>1</duration>\n",
-               "<type>quarter</type>\n",
-               "</note>\n"]
-
-beat = 0
-measure = 1
-
-def get_note(note_info):
-    match note_info % 12:
-        case 0:
-            return "C"
-        case 1:
-            return "C#"
-        case 2:
-            return "D"
-        case 3:
-            return "D#"
-        case 4:
-            return "E"
-        case 5:
-            return "F"
-        case 6:
-            return "F#"
-        case 7:
-            return "G"
-        case 8:
-            return "G#"
-        case 9: 
-            return "A"
-        case 10:
-            return "A#"
-        case 11:
-            return "B"
-        
-def get_octave(note_info):
-    return (note_info // 12) - 1 # // = truncating division
-
-def generate(note, octave, beat, measure):
-    with open("sheet.musicxml", "a") as file:
-        # run until note array is empty
-        # determine if measure is full
-        if beat > 3: # create a new measure
-            file.write("</measure>\n")
-            measure += 1
-            file.write("<measure number=\"" + str(measure) + "\">\n") # create a new measure
-            beat = 0
-        file.writelines(note_template) # add note_template
-        file.write("<step>" + str(note[0]) + "</step>\n") # add the note information
-        if len(note) > 1: # check if note is sharp/flat
-            if note[1] == "#":
-                file.write("<alter>1</alter>\n")
-            else:
-                file.write("<alter>-1</alter>\n")
-        file.write("<octave>" + str(octave) + "</octave>\n")
-        beat += 1
-        file.writelines(note_ending) # write note_ending
-    
-    return beat, measure
+note_ending = {"quarter": "</pitch>\n<duration>1</duration>\n<type>quarter</type>\n</note>\n",
+                        "half": "</pitch>\n<duration>2</duration>\n<type>half</type>\n</note>\n",
+                        "whole": "</pitch>\n<duration>4</duration>\n<type>whole</type>\n</note>\n",
+                        "eighth": "</pitch>\n<duration>0.5</duration>\n<type>eighth</type>\n</note>\n",
+                        "sixteenth": "</pitch>\n<duration>0.25</duration>\n<type>sixteenth</type>\n</note>\n",
+                        "thirty-second": "</pitch>\n<duration>0.125</duration>\n<type>thirty-second</type>\n</note>\n"}
 
 midi.init()
 
-# This prints the default device ids that we are outputting to / taking input from
-print('Output ID', midi.get_default_output_id())
-print('Input ID', midi.get_default_input_id())
+# # This prints the default device ids that we are outputting to / taking input from
+# print('Output ID', midi.get_default_output_id())
+# print('Input ID', midi.get_default_input_id())
 
-# List the MIDI devices that can be used
-for i in range(0, midi.get_count()):
-    print(i, midi.get_device_info(i))
+# # List the MIDI devices that can be used
+# for i in range(0, midi.get_count()):
+#     print(i, midi.get_device_info(i))
 
-# Here, you must check what the device # for your MIDI controller is
-# You will not be guaranteed that the MIDI controller you want to use is the default
+input_device = midi.Input(midi.get_default_input_id())
 
-# Start the input stream
-input = midi.Input(midi.get_default_input_id())
+# Calculate durations
+BPM = 60
+QUARTER_DURATION = 60 / BPM
+HALF_DURATION = 2 * QUARTER_DURATION
+WHOLE_DURATION = 4 * QUARTER_DURATION
+EIGHTH_DURATION = QUARTER_DURATION / 2
+SIXTEENTH_DURATION = QUARTER_DURATION / 4
+THIRTY_SECOND_DURATION = QUARTER_DURATION / 8
 
-# Here's an example of setting the input device to something other than the default
-# input = midi.Input(3)
+def get_note(note_number):
+    note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    return note_names[note_number % 12]
 
-print('*** Ready to play ***')
-print('**Press [q] to quit**')
+def get_octave(note_number):
+    return (note_number // 12) - 1 # // = truncating division
 
-with open("sheet.musicxml", "w") as file:
-    file.writelines(template)
+def get_note_duration(start_time, end_time):
+    duration = end_time - start_time
+ 
+    error = .51
 
-while keyboard.is_pressed('q') != True:
-    # Detect keypress on input
-    if input.poll():
-        # Get MIDI event information
-        event = input.read(1000)
-        print(event)
-        if event[0][0][0] == 144:
-            print(get_note(event[0][0][1]), get_octave(event[0][0][1]))
-            beat, measure = generate(get_note(event[0][0][1]), get_octave(event[0][0][1]), beat, measure)
+    if abs(WHOLE_DURATION * error <= duration <= WHOLE_DURATION / error):
+        return "whole"
+    elif abs(HALF_DURATION * error <= duration <= HALF_DURATION / error):
+        return "half"
+    elif abs(QUARTER_DURATION * error <= duration <= QUARTER_DURATION / error):
+        return "quarter"
+    elif abs(EIGHTH_DURATION * error <= duration <= EIGHTH_DURATION / error):
+        return "eighth"
+    elif abs(SIXTEENTH_DURATION * error <= duration <= SIXTEENTH_DURATION / error):
+        return "sixteenth"
+    elif abs(THIRTY_SECOND_DURATION * error <= duration <= THIRTY_SECOND_DURATION / error):
+        return "thirty-second"
+    else:
+        return "unknown"
 
-# Close the midi interface
-midi.quit()
+note_start_times = {}
+beat = 0
+measure = 1
 
-# write template_ending
-with open("sheet.musicxml", "a") as file:
-    file.writelines(template_ending)
+try:
+    print('*** Ready to play ***')
+    print('**Press [q] to quit**')
+
+    with open("sheet.musicxml", "w") as file:
+        file.writelines(template)
+
+    while not keyboard.is_pressed('q'):
+        # Detect keypress on input
+        if input_device.poll():
+            # Get MIDI even information
+            midi_events = input_device.read(1000)
+            
+            for event in midi_events:
+                data, timestamp = event[0], event[1]
+                status, note, velocity, _ = data
+
+                if status == 144 and velocity > 0:  # key pressed
+                    note_start_times[note] = time.time()
+                elif (status == 128) or (status == 144 and velocity == 0):  # key released
+                    if note in note_start_times:
+                        start_time = note_start_times.pop(note, None)
+                        end_time = time.time()
+                        d = abs(start_time-end_time)
+                        duration = get_note_duration(start_time, end_time)
+                        note_name = get_note(note)
+                        octave = get_octave(note)
+
+                        print(f"{note_name}{octave} {duration} {d}")
+                        
+                        if duration != "unknown":
+                            # Generate and append MusicXML note entry
+                            with open("sheet.musicxml", "a") as file:
+                                file.writelines(note_template)
+                                file.write(f"<step>{note_name}</step>\n")
+                                if "#" in note_name:
+                                    file.write("<alter>1</alter>\n")
+                                file.write(f"<octave>{octave}</octave>\n")
+                                file.writelines(note_ending[duration])
+finally:
+    # Close the midi interface
+    midi.quit()
+
+    # write template_ending 
+    with open("sheet.musicxml", "a") as file:
+        file.writelines(template_ending)
