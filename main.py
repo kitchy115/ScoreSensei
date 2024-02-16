@@ -15,7 +15,7 @@ template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
             "<part id=\"P1\">\n",
             "<measure number=\"1\">\n",
             "<attributes>\n",
-            "<divisions>1</divisions>\n",
+            "<divisions>8</divisions>\n",
             "<key>\n",
             "<fifths>0</fifths>\n",
             "</key>\n",
@@ -36,26 +36,19 @@ template_ending = ["</measure>\n",
 note_template = ["<note>\n",
                  "<pitch>\n"]
 
-note_ending = {"quarter": "</pitch>\n<duration>1</duration>\n<type>quarter</type>\n</note>\n",
-                        "half": "</pitch>\n<duration>2</duration>\n<type>half</type>\n</note>\n",
-                        "whole": "</pitch>\n<duration>4</duration>\n<type>whole</type>\n</note>\n",
-                        "eighth": "</pitch>\n<duration>0.5</duration>\n<type>eighth</type>\n</note>\n",
-                        "sixteenth": "</pitch>\n<duration>0.25</duration>\n<type>sixteenth</type>\n</note>\n",
-                        "thirty-second": "</pitch>\n<duration>0.125</duration>\n<type>thirty-second</type>\n</note>\n"}
+note_to_value = {"quarter": 8,
+                 "half": 16,
+                 "whole": 32,
+                 "eighth": 4,
+                 "16th": 2,
+                 "32nd": 1}
 
-note_duration = {"quarter": 1,
-                 "half": 2,
-                 "whole": 4,
-                 "eighth": 0.5,
-                 "sixteenth": 0.25,
-                 "thirty-second": 0.125}
-
-duration_note = {1: "quarter",
-                 2: "half",
-                 4: "whole",
-                 0.5: "eighth",
-                 0.25: "sixteenth",
-                 0.125: "thirty-second"}
+value_to_note = {8: "quarter",
+                 16: "half",
+                 32: "whole",
+                 4: "eighth",
+                 2: "16th",
+                 1: "32nd"}
 
 midi.init()
 
@@ -99,31 +92,116 @@ def get_note_duration(start_time, end_time):
     elif abs(EIGHTH_DURATION * error <= duration <= EIGHTH_DURATION / error):
         return "eighth"
     elif abs(SIXTEENTH_DURATION * error <= duration <= SIXTEENTH_DURATION / error):
-        return "sixteenth"
+        return "16th"
     elif abs(THIRTY_SECOND_DURATION * error <= duration <= THIRTY_SECOND_DURATION / error):
-        return "thirty-second"
+        return "32nd"
     else:
         return "unknown"
+
+# only works in 4/4
+def calc_dotted(duration):
+    if duration - 32 > 0:
+        return 32
+    elif duration - 16 > 0:
+        return 16
+    elif duration - 8 > 0:
+        return 8
+    elif duration - 4 > 0:
+        return 4
+    elif duration - 2 > 0:
+        return 2
+    elif duration - 1 > 0:
+        return 1
+    else:
+        return 0
     
-def generate(beats, measure, duration, note_name, octave):
+def generate(beat, measure, duration, note_name, octave):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
-        if beats + note_duration[duration] > 4:
+        # determine beats in measure
+        # if beat of note is > beat remaning in measure
+        # use tied note, in first measure leave beat measure needs to be comeplete
+        # put remainder of note in other measure
+        # i.e. measure one has 3 beats, user plays a half note
+        # leave quater note in measure 1, create measure two
+        # tie last note in measure 1 to left over beat (one quarter note) in measure 2
+        if beat + note_to_value[duration] > 32:
+            # add what can fit from this note into the measure
             file.writelines(note_template)
             file.write(f"<step>{note_name}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
-            first_note_duration = 4-beats # may need to be represented as a dotted note
-            second_note_value = note_duration[duration]-(4-beats) # may need to be represented as a dotted note
-            
-        elif beats + note_duration[duration] == 4:
-            return
+            if 32-beat not in value_to_note: # must use dotted note
+                file.write(f"<duration>{32-beat}</duration>\n")
+                file.write(f"<type>{value_to_note[calc_dotted(32-beat)]}</type>\n")
+                file.write("<dot/>\n")
+                file.write("<notations>\n")
+                file.write("<tied type=\"start\"/>\n")
+                file.write("</notations>\n")
+                file.write("</note>\n")
+            else:
+                file.write(f"<duration>{32-beat}</duration>\n")
+                file.write(f"<type>{value_to_note[32-beat]}</type>\n")
+                file.write("<notations>\n")
+                file.write("<tied type=\"start\"/>\n")
+                file.write("</notations>\n")
+                file.write("</note>\n")
+            file.write("</measure>\n")
+            measure += 1
+            # create new measure
+            file.write(f"<measure number=\"{measure}\">\n")
+            file.writelines(note_template)
+            file.write(f"<step>{note_name}</step>\n")
+            if "#" in note_name:
+                file.write("<alter>1</alter>\n")
+            file.write(f"<octave>{octave}</octave>\n")
+            file.write("</pitch>\n")
+            # add other part of note to new measure
+            if note_to_value[duration] - (32-beat) not in value_to_note: # must use dotted note
+                file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
+                file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat))]}</type>\n")
+                file.write("<dot/>\n")
+                file.write("<notations>\n")
+                file.write("<tied type=\"stop\"/>\n")
+                file.write("</notations>\n")
+                file.write("</note>\n")
+            else:
+                file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
+                file.write(f"<type>{value_to_note[note_to_value[duration] - (32-beat)]}</type>\n")
+                file.write("<notations>\n")
+                file.write("<tied type=\"stop\"/>\n")
+                file.write("</notations>\n")
+                file.write("</note>\n")
+            beat = note_to_value[duration] - (32-beat)
+        elif beat + note_to_value[duration] == 32:
+            file.writelines(note_template)
+            file.write(f"<step>{note_name}</step>\n")
+            if "#" in note_name:
+                file.write("<alter>1</alter>\n")
+            file.write(f"<octave>{octave}</octave>\n")
+            file.write("</pitch>\n")
+            file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<type>{duration}</type>\n")
+            file.write("</note>\n")
+            file.write("</measure>\n")
+            measure += 1
+            beat = 0
+            file.write(f"<measure number=\"{measure}\">\n")
         else:
-            return
+            file.writelines(note_template)
+            file.write(f"<step>{note_name}</step>\n")
+            if "#" in note_name:
+                file.write("<alter>1</alter>\n")
+            file.write(f"<octave>{octave}</octave>\n")
+            file.write("</pitch>\n")
+            file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<type>{duration}</type>\n")
+            file.write("</note>\n")
+            beat += note_to_value[duration]
 
-    return beats, measure
+    return beat, measure
 
 note_start_times = {}
 beat = 0
@@ -159,25 +237,10 @@ try:
 
                         print(f"{note_name}{octave} {duration} {d}")
 
-                        # determine beats in measure
-
-                        # if beat of note is > beat remaning in measure
-                        # use tied note, in first measure leave beat measure needs to be comeplete
-                        # put remainder of note in other measure
-                        # i.e. measure one has 3 beats, user plays a half note
-                        # leave quater note in measure 1, create measure two
-                        # tie last note in measure 1 to left over beat (one quarternote) in measure 2
-                        beats, measure = generate(beats, measure, duration, note_name, octave)
-                        
-                        '''
                         if duration != "unknown":
-                            file.writelines(note_template)
-                            file.write(f"<step>{note_name}</step>\n")
-                            if "#" in note_name:
-                                file.write("<alter>1</alter>\n")
-                            file.write(f"<octave>{octave}</octave>\n")
-                            file.writelines(note_ending[duration])
-                        '''   
+                            beat, measure = generate(beat, measure, duration, note_name, octave)
+                            print(f"beat: {beat} measure: {measure}")
+                        
 finally:
     # Close the midi interface
     midi.quit()
