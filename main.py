@@ -154,3 +154,4 @@ finally:
     # write template_ending 
     with open("sheet.musicxml", "a") as file:
         file.writelines(template_ending)
+
