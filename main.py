@@ -45,15 +45,16 @@ note_ending = {"quarter": "</pitch>\n<duration>1</duration>\n<type>quarter</type
 
 midi.init()
 
-# # This prints the default device ids that we are outputting to / taking input from
-# print('Output ID', midi.get_default_output_id())
-# print('Input ID', midi.get_default_input_id())
+# This prints the default device ids that we are outputting to / taking input from
+print('Output ID', midi.get_default_output_id())
+print('Input ID', midi.get_default_input_id())
 
-# # List the MIDI devices that can be used
-# for i in range(0, midi.get_count()):
-#     print(i, midi.get_device_info(i))
+# List the MIDI devices that can be used
+for i in range(0, midi.get_count()):
+    print(i, midi.get_device_info(i))
 
-input_device = midi.Input(midi.get_default_input_id())
+input_device = midi.Input(1)
+
 
 # Calculate durations
 BPM = 60
@@ -95,12 +96,15 @@ note_start_times = {}
 beat = 0
 measure = 1
 
+
 try:
     print('*** Ready to play ***')
     print('**Press [q] to quit**')
 
     with open("sheet.musicxml", "w") as file:
         file.writelines(template)
+
+    last_note_end_time = 0 #when the last note ends
 
     while not keyboard.is_pressed('q'):
         # Detect keypress on input
@@ -113,17 +117,25 @@ try:
                 status, note, velocity, _ = data
 
                 if status == 144 and velocity > 0:  # key pressed
+                      # starts at 0, then gets updated IN the loop
                     note_start_times[note] = time.time()
+                    #rest is calculated by the current notes start time - the last notes end time
+                    if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
+                        rest = "{:.4f}".format(note_start_times[note] - last_note_end_time)
+                        print(f"Rest Time: {rest} seconds")
+
+
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
                     if note in note_start_times:
                         start_time = note_start_times.pop(note, None)
                         end_time = time.time()
-                        d = abs(start_time-end_time)
+                        d = "{:.4f}".format(abs(start_time-end_time)) #we cut off the time at 3 decimals
                         duration = get_note_duration(start_time, end_time)
                         note_name = get_note(note)
                         octave = get_octave(note)
 
-                        print(f"{note_name}{octave} {duration} {d}")
+                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
+                        last_note_end_time = time.time() #update the last_note_end_time to be when the key is realirzed
                         
                         if duration != "unknown":
                             # Generate and append MusicXML note entry
@@ -134,6 +146,7 @@ try:
                                     file.write("<alter>1</alter>\n")
                                 file.write(f"<octave>{octave}</octave>\n")
                                 file.writelines(note_ending[duration])
+
 finally:
     # Close the midi interface
     midi.quit()
