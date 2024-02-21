@@ -52,15 +52,15 @@ value_to_note = {8: "quarter",
 
 midi.init()
 
-# # This prints the default device ids that we are outputting to / taking input from
-# print('Output ID', midi.get_default_output_id())
-# print('Input ID', midi.get_default_input_id())
+# This prints the default device ids that we are outputting to / taking input from
+print('Output ID', midi.get_default_output_id())
+print('Input ID', midi.get_default_input_id())
 
-# # List the MIDI devices that can be used
-# for i in range(0, midi.get_count()):
-#     print(i, midi.get_device_info(i))
+# List the MIDI devices that can be used
+for i in range(0, midi.get_count()):
+    print(i, midi.get_device_info(i))
 
-input_device = midi.Input(midi.get_default_input_id())
+input_device = midi.Input(1)
 
 # Calculate durations
 BPM = 60
@@ -100,16 +100,60 @@ def get_note_duration(start_time, end_time):
 
 # only works in 4/4
 def calc_dotted(duration):
-    if duration - 32 > 0:
+    if duration - 32> 0: # dotted whole
         return 32
+    elif duration - 16 > 0: # dotted half
+        return 16
+    elif duration - 8 > 0: # dotted quarter
+        return 8
+    elif duration - 4 > 0: # dotted eighth
+        return 4
+    elif duration - 2 > 0: # dotted 16th
+        return 2
+    elif duration - 1 > 0: # dotted 32nd
+        return 1
+    else:
+        return 0
+    
+def check_dotted(duration):
+    if duration == 48: # dotted whole
+        return 32
+    elif duration == 24: # dotted half
+        return 16
+    elif duration == 12: # dotted quarter
+        return 8
+    elif duration == 6: # dotted eighth
+        return 4
+    elif duration == 3: # dotted 16th
+        return 2
+    elif duration == 1.5: # dotted 32nd
+        return 1
+    else:
+        return 0
+    
+def get_closest_note(duration):
+    if duration - 48 > 0: # dotted whole
+        return 48
+    elif duration - 32 > 0: # whole
+        return 32
+    elif duration - 24 > 0:
+        return 24
     elif duration - 16 > 0:
         return 16
+    elif duration - 12 > 0:
+        return 12
     elif duration - 8 > 0:
         return 8
+    elif duration - 6 > 0:
+        return 6
     elif duration - 4 > 0:
         return 4
+    elif duration - 3 > 0:
+        return 3
     elif duration - 2 > 0:
         return 2
+    elif duration - 1.5 > 0:
+        return 1.5
     elif duration - 1 > 0:
         return 1
     else:
@@ -133,15 +177,54 @@ def generate(beat, measure, duration, note_name, octave):
                 file.write("<alter>1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
-            if 32-beat not in value_to_note: # must use dotted note
-                file.write(f"<duration>{32-beat}</duration>\n")
-                file.write(f"<type>{value_to_note[calc_dotted(32-beat)]}</type>\n")
-                file.write("<dot/>\n")
-                file.write("<notations>\n")
-                file.write("<tied type=\"start\"/>\n")
-                file.write("</notations>\n")
-                file.write("</note>\n")
+            # check that 32-beat can be displayed as a single note
+            if 32-beat not in value_to_note: # cannot dislay as a single normal note
+                # beginning of new stuff
+                if check_dotted(32-beat) != 0: # display as single dotted note
+                    file.write(f"<duration>{32-beat}</duration>\n")
+                    file.write(f"<type>{value_to_note[calc_dotted(32-beat)]}</type>\n")
+                    file.write("<dot/>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"start\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
+                else: # display two tied notes 
+                    # display first of two
+                    file.write(f"<duration>{32-beat-get_closest_note(32-beat)}</duration>\n")
+                    if 32-beat-get_closest_note(32-beat) not in value_to_note:
+                        # represent as dotted
+                        file.write(f"<type>{value_to_note[calc_dotted(32-beat-get_closest_note(32-beat))]}</type>\n")
+                        file.write("<dot/>\n")
+                    else:
+                        # represent as normal note
+                        file.write(f"<type>{value_to_note[32-beat-get_closest_note(32-beat)]}</type>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"start\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
+                    # display the second note
+                    file.writelines(note_template)
+                    file.write(f"<step>{note_name}</step>\n")
+                    if "#" in note_name:
+                        file.write("<alter>1</alter>\n")
+                    file.write(f"<octave>{octave}</octave>\n")
+                    file.write("</pitch>\n")
+                    file.write(f"<duration>{get_closest_note(32-beat)}</duration>\n")
+                    if get_closest_note(32-beat) not in value_to_note:
+                        # represent as dotted
+                        file.write(f"<type>{value_to_note[calc_dotted(get_closest_note(32-beat))]}</type>\n")
+                        file.write("<dot/>\n")
+                    else:
+                        # represent as normal note
+                        file.write(f"<type>{value_to_note[get_closest_note(32-beat)]}</type>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"stop\"/>\n")
+                    file.write("<tied type=\"start\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
+                    # end of new stuff
             else:
+                # display as a single normal note
                 file.write(f"<duration>{32-beat}</duration>\n")
                 file.write(f"<type>{value_to_note[32-beat]}</type>\n")
                 file.write("<notations>\n")
@@ -158,16 +241,52 @@ def generate(beat, measure, duration, note_name, octave):
                 file.write("<alter>1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
-            # add other part of note to new measure
-            if note_to_value[duration] - (32-beat) not in value_to_note: # must use dotted note
-                file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
-                file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat))]}</type>\n")
-                file.write("<dot/>\n")
-                file.write("<notations>\n")
-                file.write("<tied type=\"stop\"/>\n")
-                file.write("</notations>\n")
-                file.write("</note>\n")
+            # check if note can be displayed as one or need to be split into two notes
+            if note_to_value[duration] - (32-beat) not in value_to_note:
+                if check_dotted(note_to_value[duration] - (32-beat)) != 0: # display as single dotted note
+                    file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
+                    file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat))]}</type>\n")
+                    file.write("<dot/>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"stop\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
+                else: # display two tied notes
+                    # display first of two
+                    file.write(f"<duration>{note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat))}</duration>\n")
+                    if note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat)) not in value_to_note:
+                        # represent as dotted
+                        file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat)))]}</type>\n")
+                        file.write("<dot/>\n")
+                    else:
+                        # represent as normal note
+                        file.write(f"<type>{value_to_note[note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat))]}</type>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"stop\"/>\n")
+                    file.write("<tied type=\"start\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
+                    # display the second note
+                    file.writelines(note_template)
+                    file.write(f"<step>{note_name}</step>\n")
+                    if "#" in note_name:
+                        file.write("<alter>1</alter>\n")
+                    file.write(f"<octave>{octave}</octave>\n")
+                    file.write("</pitch>\n")
+                    file.write(f"<duration>{get_closest_note(note_to_value[duration] - (32-beat))}</duration>\n")
+                    if get_closest_note(note_to_value[duration] - (32-beat)) not in value_to_note:
+                        # represent as dotted
+                        file.write(f"<type>{value_to_note[calc_dotted(get_closest_note(note_to_value[duration] - (32-beat)))]}</type>\n")
+                        file.write("<dot/>\n")
+                    else:
+                        # represent as normal note
+                        file.write(f"<type>{value_to_note[get_closest_note(note_to_value[duration] - (32-beat))]}</type>\n")
+                    file.write("<notations>\n")
+                    file.write("<tied type=\"stop\"/>\n")
+                    file.write("</notations>\n")
+                    file.write("</note>\n")
             else:
+                # display as one normal note
                 file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
                 file.write(f"<type>{value_to_note[note_to_value[duration] - (32-beat)]}</type>\n")
                 file.write("<notations>\n")
@@ -175,6 +294,7 @@ def generate(beat, measure, duration, note_name, octave):
                 file.write("</notations>\n")
                 file.write("</note>\n")
             beat = note_to_value[duration] - (32-beat)
+            # check if another tied note needs to be displayed
         elif beat + note_to_value[duration] == 32:
             file.writelines(note_template)
             file.write(f"<step>{note_name}</step>\n")
@@ -221,6 +341,7 @@ try:
             midi_events = input_device.read(1000)
             
             for event in midi_events:
+                print(event)
                 data, timestamp = event[0], event[1]
                 status, note, velocity, _ = data
 
