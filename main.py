@@ -499,7 +499,7 @@ try:
                     #rest is calculated by the current notes start time - the last notes end time
                     if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
                         d = "{:.4f}".format(note_start_times[note] - last_note_end_time)
-                        duration = get_note_duration(note_start_times[note], last_note_end_time)
+                        duration = get_note_duration(last_note_end_time, note_start_times[note]) # last as first and first as last?
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
