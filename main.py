@@ -100,7 +100,7 @@ def get_note_duration(start_time, end_time):
 
 # only works in 4/4
 def calc_dotted(duration):
-    if duration - 32> 0: # dotted whole
+    if duration - 32 > 0: # dotted whole
         return 32
     elif duration - 16 > 0: # dotted half
         return 16
@@ -158,6 +158,24 @@ def get_closest_note(duration):
         return 1
     else:
         return 0
+    
+def get_dynamic(velocity):
+    if velocity <= 29:
+        return "ppp"
+    elif 30 <= velocity <= 39:
+        return "pp"
+    elif 40 <= velocity <= 49:
+        return "p"
+    elif 50 <= velocity <= 59:
+        return "mp"
+    elif 60 <= velocity <= 69:
+        return "mf"
+    elif 70 <= velocity <= 79:
+        return "f"
+    elif 80 <= velocity <= 89:
+        return "ff"
+    elif 90 <= velocity:
+        return "fff"
     
 def generate_note(beat, measure, duration, note_name, octave):
     # Generate and append MusicXML note entry
@@ -469,9 +487,22 @@ def generate_rest(beat, measure, duration):
 
     return beat, measure
 
+def generate_dynamic(dynamic):
+    # Generate and append MusicXML note entry
+    with open("sheet.musicxml", "a") as file:
+        file.write("<direction placement=\"below\">\n")
+        file.write("<direction-type>\n")
+        file.write("<dynamics>\n")
+        file.write(f"<{dynamic}/>\n")
+        file.write("</dynamics>\n")
+        file.write("</direction-type>\n")
+        file.write("</direction>\n")
+
 note_start_times = {}
 beat = 0
 measure = 1
+dyanmic = None
+last_dynamic = None
 
 try:
     print('*** Ready to play ***')
@@ -499,13 +530,16 @@ try:
                     #rest is calculated by the current notes start time - the last notes end time
                     if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
                         d = "{:.4f}".format(note_start_times[note] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note]) # last as first and first as last?
+                        duration = get_note_duration(last_note_end_time, note_start_times[note])
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
                             beat, measure = generate_rest(beat, measure, duration)
+                    
+                    dynamic = get_dynamic(velocity)
+                    print(f"{dyanmic} {velocity}")
 
-                elif (status == 128) or (status == 144 and velocity == 0):  # key released
+                elif (status == 128) or (status == 144 and velocity == 0): # key released
                     if note in note_start_times:
                         start_time = note_start_times.pop(note, None)
                         end_time = time.time()
@@ -515,9 +549,13 @@ try:
                         octave = get_octave(note)
 
                         print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
-                        last_note_end_time = time.time() #update the last_note_end_time to be when the key is realirzed
+                        last_note_end_time = time.time() # update the last_note_end_time to be when the key is realized
 
                         if duration != "unknown":
+                            if last_dynamic != dynamic:
+                                generate_dynamic(dynamic)
+                                last_dynamic = dynamic
+                            
                             beat, measure = generate_note(beat, measure, duration, note_name, octave)
                             print(f"beat: {beat} measure: {measure}")
                         
