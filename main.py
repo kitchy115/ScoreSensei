@@ -1,11 +1,12 @@
 from pygame import midi
 import keyboard
 import time
+from collections import OrderedDict
 
-template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n", 
-            "<!DOCTYPE score-partwise PUBLIC\n", 
+template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
+            "<!DOCTYPE score-partwise PUBLIC\n",
             "\"-//Recordare//DTD MusicXML 4.0 Partwise//EN\"\n",
-            "\"http://www.musicxml.org/dtds/partwise.dtd\">\n", 
+            "\"http://www.musicxml.org/dtds/partwise.dtd\">\n",
             "<score-partwise version=\"4.0\">\n",
             "<part-list>\n",
             "<score-part id=\"P1\">\n",
@@ -57,7 +58,7 @@ input_device = midi.Input(1)
 
 
 # Calculate durations
-BPM = 60
+BPM = 100
 QUARTER_DURATION = 60 / BPM
 HALF_DURATION = 2 * QUARTER_DURATION
 WHOLE_DURATION = 4 * QUARTER_DURATION
@@ -73,8 +74,8 @@ def get_octave(note_number):
     return (note_number // 12) - 1 # // = truncating division
 
 def get_note_duration(start_time, end_time):
-    duration = end_time - start_time
- 
+    duration = (end_time - start_time)
+
     error = .51
 
     if abs(WHOLE_DURATION * error <= duration <= WHOLE_DURATION / error):
@@ -92,9 +93,34 @@ def get_note_duration(start_time, end_time):
     else:
         return "unknown"
 
-note_start_times = {}
+def isInRange(a,b):
+    a_float = float(a)
+    b_float = float(b)
+    if abs(a_float - b_float) < 0.01:
+        # print(a_float, " and ", b_float)
+        return True
+    else:
+        return False
+
+def previous_value(dictionary, current_key):
+
+    # Get the list of keys from the OrderedDict
+    keys = list(dictionary.keys())
+
+    # Get an index of the current key and offset it by -1
+    index = keys.index(current_key) - 1
+
+    # return the previous key's value
+    return dictionary[keys[index]]
+
+note_start_times = OrderedDict()
+
+
 beat = 0
 measure = 1
+chord_notes = []
+rest_times = [] #rest_times
+notes = []
 
 
 try:
@@ -105,24 +131,48 @@ try:
         file.writelines(template)
 
     last_note_end_time = 0 #when the last note ends
-
+    rest = 0 #doesnt count
+    chord_threshold = 0.1 #cutoff point for a chord
+    active_notes = []
+    prev_duration = 0
+    start_diff = 0
+    start_time = 0
+    note_index = 0
     while not keyboard.is_pressed('q'):
         # Detect keypress on input
         if input_device.poll():
             # Get MIDI even information
             midi_events = input_device.read(1000)
-            
+
             for event in midi_events:
                 data, timestamp = event[0], event[1]
                 status, note, velocity, _ = data
 
+
                 if status == 144 and velocity > 0:  # key pressed
                       # starts at 0, then gets updated IN the loop
                     note_start_times[note] = time.time()
+
                     #rest is calculated by the current notes start time - the last notes end time
                     if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
                         rest = "{:.4f}".format(note_start_times[note] - last_note_end_time)
                         print(f"Rest Time: {rest} seconds")
+                    start_diff = "{:.4f}".format(note_start_times[note] - previous_value(note_start_times, note))
+
+                    print(f"Start Diff: {start_diff} seconds")
+
+                # Inside your MIDI event processing loop:
+                if status == 144 and velocity > 0:  # Note On event
+                    active_notes.append(note)  # Add the pressed note to the set of active notes
+
+                elif status == 128 or (status == 144 and velocity == 0):  # Note Off event or Note On with velocity 0
+                    if note in active_notes:
+                        active_notes.remove(note)  # Remove the released note from the set of active notes
+
+                if len(active_notes) > 1:
+                    # Handle the active notes as a chord
+                    chord_notes = [get_note(note) for note in active_notes]
+
 
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
@@ -131,12 +181,18 @@ try:
                         end_time = time.time()
                         d = "{:.4f}".format(abs(start_time-end_time)) #we cut off the time at 3 decimals
                         duration = get_note_duration(start_time, end_time)
+                        prev_duration = d
                         note_name = get_note(note)
                         octave = get_octave(note)
+                        # Check if multiple notes are active simultaneously
+
 
                         print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
                         last_note_end_time = time.time() #update the last_note_end_time to be when the key is realirzed
-                        
+                        if float(d) > 0.1:
+                            print("Chord:", ' '.join(chord_notes))
+
+
                         if duration != "unknown":
                             # Generate and append MusicXML note entry
                             with open("sheet.musicxml", "a") as file:
@@ -151,7 +207,9 @@ finally:
     # Close the midi interface
     midi.quit()
 
-    # write template_ending 
+    # write template_ending
     with open("sheet.musicxml", "a") as file:
         file.writelines(template_ending)
+
+
 
