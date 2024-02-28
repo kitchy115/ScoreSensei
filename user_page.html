@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>SCORE SENSEI</title>
+        <link rel="stylesheet" href="./style.css" />
+      </head>
+
+      <!--NAV BAR-->
+      <nav>
+        <a href="#" class="logo">
+          <img src = "Images/SCORESENSEILOGO.png" alt = "Score Sensei Logo">
+        </a>
+
+        <!--Using unordered list for nav bar-->
+        <!--Eventually we will have to fill hrefs with actual file paths to other pages-->
+        <ul>
+          <li><a href="#" class="link">About Us</a></li>
+          <li><a href="#" class="link">Show Case</a></li>
+          <li><a href="#" class="link">GitHub</a></li>
+          <li><a href="#" class="link">LOGIN</a></li>
+        </ul>
+      </nav>
+
+      <!--USER INPUT (for beats per min, time signature and key)-->
+      <form action="/submit">
+        <label for="Beats per minute" style="color: white;">Beats per minute:</label>
+        <input type="text" id="Beats per minute" name="Beats per minute">
+        <input type="submit" value="Submit">
+     </form>
+
+      <form action="/submit">
+        <label for="Time Signature" style="color: white;">Time Signature:</label>
+        <input type="text" id="Time Signature" name="Time Signature">
+        <input type="submit" value="Submit">
+     </form>
+
+     <form action="/submit">
+        <label for="Key" style="color: white;">Key:</label>
+        <input type="text" id="Key" name="Key">
+        <input type="submit" value="Submit">
+     </form>
+
+</html>
