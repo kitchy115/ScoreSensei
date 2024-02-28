@@ -537,7 +537,7 @@ try:
                             beat, measure = generate_rest(beat, measure, duration)
                     
                     dynamic = get_dynamic(velocity)
-                    print(f"{dyanmic} {velocity}")
+                    print(f"{dynamic} {velocity}")
 
                 elif (status == 128) or (status == 144 and velocity == 0): # key released
                     if note in note_start_times:
