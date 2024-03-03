@@ -1,7 +1,6 @@
 from pygame import midi
 import keyboard
 import time
-from collections import OrderedDict
 
 template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
             "<!DOCTYPE score-partwise PUBLIC\n",
@@ -32,17 +31,17 @@ template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
 
 template_ending = ["</measure>\n",
                    "</part>\n",
-                    "</score-partwise>"]
+                   "</score-partwise>"]
 
 note_template = ["<note>\n",
                  "<pitch>\n"]
 
 note_ending = {"quarter": "</pitch>\n<duration>1</duration>\n<type>quarter</type>\n</note>\n",
-                        "half": "</pitch>\n<duration>2</duration>\n<type>half</type>\n</note>\n",
-                        "whole": "</pitch>\n<duration>4</duration>\n<type>whole</type>\n</note>\n",
-                        "eighth": "</pitch>\n<duration>0.5</duration>\n<type>eighth</type>\n</note>\n",
-                        "sixteenth": "</pitch>\n<duration>0.25</duration>\n<type>sixteenth</type>\n</note>\n",
-                        "thirty-second": "</pitch>\n<duration>0.125</duration>\n<type>thirty-second</type>\n</note>\n"}
+               "half": "</pitch>\n<duration>2</duration>\n<type>half</type>\n</note>\n",
+               "whole": "</pitch>\n<duration>4</duration>\n<type>whole</type>\n</note>\n",
+               "eighth": "</pitch>\n<duration>0.5</duration>\n<type>eighth</type>\n</note>\n",
+               "sixteenth": "</pitch>\n<duration>0.25</duration>\n<type>sixteenth</type>\n</note>\n",
+               "thirty-second": "</pitch>\n<duration>0.125</duration>\n<type>thirty-second</type>\n</note>\n"}
 
 midi.init()
 
@@ -54,11 +53,10 @@ print('Input ID', midi.get_default_input_id())
 for i in range(0, midi.get_count()):
     print(i, midi.get_device_info(i))
 
-input_device = midi.Input(1)
-
+input_device = midi.Input(2)
 
 # Calculate durations
-BPM = 100
+BPM = 60
 QUARTER_DURATION = 60 / BPM
 HALF_DURATION = 2 * QUARTER_DURATION
 WHOLE_DURATION = 4 * QUARTER_DURATION
@@ -71,11 +69,10 @@ def get_note(note_number):
     return note_names[note_number % 12]
 
 def get_octave(note_number):
-    return (note_number // 12) - 1 # // = truncating division
+    return (note_number // 12) - 1  # // = truncating division
 
 def get_note_duration(start_time, end_time):
-    duration = (end_time - start_time)
-
+    duration = end_time - start_time
     error = .51
 
     if abs(WHOLE_DURATION * error <= duration <= WHOLE_DURATION / error):
@@ -93,34 +90,15 @@ def get_note_duration(start_time, end_time):
     else:
         return "unknown"
 
-def isInRange(a,b):
-    a_float = float(a)
-    b_float = float(b)
-    if abs(a_float - b_float) < 0.01:
-        # print(a_float, " and ", b_float)
-        return True
-    else:
-        return False
+MIN_NOTE_DURATION = 0.1  # Adjust this value as needed
 
-def previous_value(dictionary, current_key):
-
-    # Get the list of keys from the OrderedDict
-    keys = list(dictionary.keys())
-
-    # Get an index of the current key and offset it by -1
-    index = keys.index(current_key) - 1
-
-    # return the previous key's value
-    return dictionary[keys[index]]
-
-note_start_times = OrderedDict()
-
-
+active_notes = set() #can only be unique notes, but can also be array doesn't matter
+note_start_times = {}
+chord_processed = False  # Flag to track whether a chord release event has been processed
 beat = 0
 measure = 1
-chord_notes = []
-rest_times = [] #rest_times
-notes = []
+
+
 
 
 try:
@@ -130,70 +108,51 @@ try:
     with open("sheet.musicxml", "w") as file:
         file.writelines(template)
 
-    last_note_end_time = 0 #when the last note ends
-    rest = 0 #doesnt count
-    chord_threshold = 0.1 #cutoff point for a chord
-    active_notes = []
-    prev_duration = 0
-    start_diff = 0
-    start_time = 0
-    note_index = 0
+    last_note_end_time = 0  # when the last note ends
+    last_note_start_time = 0  # trying something out here
+
     while not keyboard.is_pressed('q'):
         # Detect keypress on input
         if input_device.poll():
-            # Get MIDI even information
+            # Get MIDI event information
             midi_events = input_device.read(1000)
 
             for event in midi_events:
                 data, timestamp = event[0], event[1]
                 status, note, velocity, _ = data
 
-
                 if status == 144 and velocity > 0:  # key pressed
-                      # starts at 0, then gets updated IN the loop
+                    last_note_start_time = time.time() #time started
                     note_start_times[note] = time.time()
-
-                    #rest is calculated by the current notes start time - the last notes end time
-                    if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
-                        rest = "{:.4f}".format(note_start_times[note] - last_note_end_time)
-                        print(f"Rest Time: {rest} seconds")
-                    start_diff = "{:.4f}".format(note_start_times[note] - previous_value(note_start_times, note))
-
-                    print(f"Start Diff: {start_diff} seconds")
-
-                # Inside your MIDI event processing loop:
-                if status == 144 and velocity > 0:  # Note On event
-                    active_notes.append(note)  # Add the pressed note to the set of active notes
-
-                elif status == 128 or (status == 144 and velocity == 0):  # Note Off event or Note On with velocity 0
-                    if note in active_notes:
-                        active_notes.remove(note)  # Remove the released note from the set of active notes
-
-                if len(active_notes) > 1:
-                    # Handle the active notes as a chord
-                    chord_notes = [get_note(note) for note in active_notes]
-
-
+                    active_notes.add(note)
+                    chord_processed = False  # Reset the flag when a new note is pressed
+                    if len(active_notes) == 2:  #will need condition of the last notes duration
+                        print("whats up")
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
-                    if note in note_start_times:
+                    if note in active_notes:
+                        active_notes.remove(note)
                         start_time = note_start_times.pop(note, None)
                         end_time = time.time()
-                        d = "{:.4f}".format(abs(start_time-end_time)) #we cut off the time at 3 decimals
+                        d = "{:.4f}".format(abs(start_time - end_time))
                         duration = get_note_duration(start_time, end_time)
-                        prev_duration = d
                         note_name = get_note(note)
                         octave = get_octave(note)
-                        # Check if multiple notes are active simultaneously
 
+                        # Check if consecutive notes are too close, treat them as one if so
+                        if len(active_notes) > 0:
+                            first_note = next(iter(active_notes))
+                            time_diff = note_start_times[first_note] - last_note_end_time
 
-                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
-                        last_note_end_time = time.time() #update the last_note_end_time to be when the key is realirzed
-                        if float(d) > 0.1:
-                            print("Chord:", ' '.join(chord_notes))
+                            if time_diff < MIN_NOTE_DURATION and not chord_processed:
+                                print(
+                                    f"Consecutive notes too close. Merging {get_note(first_note)} and {note_name} as a chord.")
+                                continue  # Skip processing the current note, treat it as part of the chord
 
+                        print(f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
+                        last_note_end_time = time.time()
 
-                        if duration != "unknown":
+                        if duration != "unknown" and not chord_processed:
                             # Generate and append MusicXML note entry
                             with open("sheet.musicxml", "a") as file:
                                 file.writelines(note_template)
@@ -203,6 +162,15 @@ try:
                                 file.write(f"<octave>{octave}</octave>\n")
                                 file.writelines(note_ending[duration])
 
+                            chord_processed = True  # Set the flag to indicate that the chord release has been processed
+
+           
+
+            # Print currently active notes
+            if not chord_processed and len(active_notes) > 1:
+                active_notes_str = ", ".join([get_note(note) for note in active_notes])
+                print(f"Active Notes: {active_notes_str}")
+
 finally:
     # Close the midi interface
     midi.quit()
@@ -210,6 +178,3 @@ finally:
     # write template_ending
     with open("sheet.musicxml", "a") as file:
         file.writelines(template_ending)
-
-
-
