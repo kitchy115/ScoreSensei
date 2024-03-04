@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicXML Parser</title>
+</head>
+<body>
+    <div id="output"></div>
+
+    <script>
+        const xmlString = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+            <!DOCTYPE score-partwise PUBLIC
+                "-//Recordare//DTD MusicXML 4.0 Partwise//EN"
+                "http://www.musicxml.org/dtds/partwise.dtd">
+            <score-partwise version="4.0">
+              <part-list>
+                <score-part id="P1">
+                  <part-name>Music</part-name>
+                </score-part>
+              </part-list>
+              <part id="P1">
+                <measure number="1">
+                  <attributes>
+                    <divisions>1</divisions>
+                    <key>
+                      <fifths>0</fifths>
+                    </key>
+                    <time>
+                      <beats>4</beats>
+                      <beat-type>4</beat-type>
+                    </time>
+                    <clef>
+                      <sign>G</sign>
+                      <line>2</line>
+                    </clef>
+                  </attributes>
+                  <note>
+                    <pitch>
+                      <step>C</step>
+                      <octave>4</octave>
+                    </pitch>
+                    <duration>4</duration>
+                    <type>whole</type>
+                  </note>
+                </measure>
+              </part>
+            </score-partwise>`;
+
+        function parseMusicXML(xmlString) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+            const notes = xmlDoc.getElementsByTagName("note");
+            for (let i = 0; i < notes.length; i++) {
+                const pitchStep = notes[i].getElementsByTagName("step")[0].textContent;
+                const pitchOctave = notes[i].getElementsByTagName("octave")[0].textContent;
+                const duration = notes[i].getElementsByTagName("duration")[0].textContent;
+                const noteType = notes[i].getElementsByTagName("type")[0].textContent;
+
+                // Create an image element
+                const noteImage = document.createElement("img");
+                noteImage.src = `images/${pitchStep}${pitchOctave}_${noteType}.png`; // Assuming image files are named like C4_whole.png
+                noteImage.alt = `${pitchStep}${pitchOctave}_${noteType}`;
+                noteImage.title = `Pitch: ${pitchStep}${pitchOctave}, Duration: ${duration}, Type: ${noteType}`;
+
+                // Append the image element to the output div
+                document.getElementById("output").appendChild(noteImage);
+            }
+        }
+
+        parseMusicXML(xmlString);
+    </script>
+</body>
+</html>
