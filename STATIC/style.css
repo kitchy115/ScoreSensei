@@ -6,7 +6,24 @@
   box-sizing: border-box;
 }
 
-/*Need to change font after deciding what works*/
+/*Declaring font - Would be used for headers*/
+@font-face 
+{
+    font-family: 'Sedwick';
+    src: url(Fonts/SedgwickAveDisplay-Regular.ttf);
+    font-weight: normal;
+    font-style: normal;
+} 
+
+/*Declaring a font that would be used for Paragraph tags*/
+@font-face 
+{
+    font-family: 'Tech';
+    src: url(Fonts/ShareTechMono-Regular.ttf);
+    font-weight: normal;
+    font-style: normal;
+} 
+
 body {
   font-family: "SF Pro Text";
   font-size: 20px;
