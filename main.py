@@ -1,4 +1,4 @@
-from pygame import midi
+import pygame.midi as midi
 import keyboard
 import time
 
@@ -53,7 +53,7 @@ print('Input ID', midi.get_default_input_id())
 for i in range(0, midi.get_count()):
     print(i, midi.get_device_info(i))
 
-input_device = midi.Input(2)
+input_device = midi.Input(1)
 
 # Calculate durations
 BPM = 60
@@ -64,12 +64,15 @@ EIGHTH_DURATION = QUARTER_DURATION / 2
 SIXTEENTH_DURATION = QUARTER_DURATION / 4
 THIRTY_SECOND_DURATION = QUARTER_DURATION / 8
 
+
 def get_note(note_number):
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     return note_names[note_number % 12]
 
+
 def get_octave(note_number):
     return (note_number // 12) - 1  # // = truncating division
+
 
 def get_note_duration(start_time, end_time):
     duration = end_time - start_time
@@ -90,17 +93,13 @@ def get_note_duration(start_time, end_time):
     else:
         return "unknown"
 
-MIN_NOTE_DURATION = 0.1  # Adjust this value as needed
-
-active_notes = set() #can only be unique notes, but can also be array doesn't matter
+active_notes = set()  # can only be unique notes, but can also be array doesn't matter
 note_start_times = {}
-chord_processed = False  # Flag to track whether a chord release event has been processed
+chord_processed = False  # flag to track whether a chord release event has been processed
 beat = 0
 measure = 1
 
-
-
-
+DEBOUNCE_DELAY = 9 / BPM  # The higher the numerator is here, the less sensitive it is to chords. *9 seems very good btw
 try:
     print('*** Ready to play ***')
     print('**Press [q] to quit**')
@@ -122,12 +121,10 @@ try:
                 status, note, velocity, _ = data
 
                 if status == 144 and velocity > 0:  # key pressed
-                    last_note_start_time = time.time() #time started
+                    last_note_start_time = time.time()  # time started
                     note_start_times[note] = time.time()
                     active_notes.add(note)
                     chord_processed = False  # Reset the flag when a new note is pressed
-                    if len(active_notes) == 2:  #will need condition of the last notes duration
-                        print("whats up")
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
                     if note in active_notes:
@@ -144,15 +141,11 @@ try:
                             first_note = next(iter(active_notes))
                             time_diff = note_start_times[first_note] - last_note_end_time
 
-                            if time_diff < MIN_NOTE_DURATION and not chord_processed:
-                                print(
-                                    f"Consecutive notes too close. Merging {get_note(first_note)} and {note_name} as a chord.")
-                                continue  # Skip processing the current note, treat it as part of the chord
+                        if len(active_notes) < 1:
+                            print(f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
+                            last_note_end_time = time.time()
 
-                        print(f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
-                        last_note_end_time = time.time()
-
-                        if duration != "unknown" and not chord_processed:
+                        if duration != "unknown" and not chord_processed and len(active_notes) >= 1:
                             # Generate and append MusicXML note entry
                             with open("sheet.musicxml", "a") as file:
                                 file.writelines(note_template)
@@ -163,13 +156,18 @@ try:
                                 file.writelines(note_ending[duration])
 
                             chord_processed = True  # Set the flag to indicate that the chord release has been processed
-
-           
+                            active_notes.clear()  # Clear active notes if it was a chord
 
             # Print currently active notes
-            if not chord_processed and len(active_notes) > 1:
+            if not chord_processed and len(active_notes) > 1:  # Only print individual notes, not chords
                 active_notes_str = ", ".join([get_note(note) for note in active_notes])
-                print(f"Active Notes: {active_notes_str}")
+                print(f"Chord: {active_notes_str}")
+
+
+
+
+        # Debounce delay
+        time.sleep(DEBOUNCE_DELAY)
 
 finally:
     # Close the midi interface
@@ -178,3 +176,4 @@ finally:
     # write template_ending
     with open("sheet.musicxml", "a") as file:
         file.writelines(template_ending)
+
