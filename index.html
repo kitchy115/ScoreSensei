@@ -15,11 +15,18 @@
     drawTitle: false,
     pageFormat: "A4_P",
   });
-  osmd.load("http://localhost:8080/sheet.musicxml").then(
+
+  setInterval(renderSheet, 100)
+
+  function renderSheet()
+  {
+    fetch("http://localhost:8080/sheet.musicxml", {cache:"no-cache"})
+
+    osmd.load("http://localhost:8080/sheet.musicxml").then(
     function() {
       osmd.render();
-    }
-  );
+    });
+  }
 </script>
 
 </body>
