@@ -1,15 +1,9 @@
-*,
-*::before,
-*::after {
-  padding: 0;
-  margin: 0;
-  box-sizing: border-box;
-}
+
 
 /*Declaring font - Would be used for headers*/
 @font-face 
 {
-    font-family: 'Sedwick';
+    font-family: 'Sedgwick';
     src: url(Fonts/SedgwickAveDisplay-Regular.ttf);
     font-weight: normal;
     font-style: normal;
@@ -24,16 +18,23 @@
     font-style: normal;
 } 
 
-body {
-  font-family: "SF Pro Text";
-  font-size: 20px;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #2C3526;
-  background: #2C3526;
+
+/*Declaring style for: Headers*/
+.header 
+{
+    font-family: Sedwick;
+    font-size: 70px;
+    color: white;
+    /* could add text allign here if needed*/ 
 }
+
+/*Example on how to use (in HTML file):
+<div class="header">
+  <h1>Header</h1>
+  <p>My supercool header</p>
+</div>
+*/
+
 /*Need to add style to button (hover effect? etc)*/
 button {
   all: unset;
@@ -60,6 +61,7 @@ ul {
   font-size: 18px;
   padding: 0.5rem;
   position: relative;
+  font-family: Sedgwick;
 }
 
 .logo {
