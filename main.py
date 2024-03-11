@@ -103,7 +103,7 @@ DEBOUNCE_DELAY = 9 / BPM  # The higher the numerator is here, the less sensitive
 try:
     print('*** Ready to play ***')
     print('**Press [q] to quit**')
-
+git 
     with open("sheet.musicxml", "w") as file:
         file.writelines(template)
 
@@ -145,6 +145,10 @@ try:
                             print(f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
                             last_note_end_time = time.time()
 
+                        if len(active_notes) >= 1:
+                            print(f"Chord Duration:{duration}, Exact Duration:{d} ")
+                            last_note_end_time = time.time()
+
                         if duration != "unknown" and not chord_processed and len(active_notes) >= 1:
                             # Generate and append MusicXML note entry
                             with open("sheet.musicxml", "a") as file:
@@ -159,14 +163,15 @@ try:
                             active_notes.clear()  # Clear active notes if it was a chord
 
             # Print currently active notes
-            if not chord_processed and len(active_notes) > 1:  # Only print individual notes, not chords
+            if not chord_processed and len(active_notes) > 1:  # Only print individual notes
                 active_notes_str = ", ".join([get_note(note) for note in active_notes])
+                active_octaves_str = ([str(get_octave(note)) for note in active_notes])
                 print(f"Chord: {active_notes_str}")
+                print(f"Octaves: {active_octaves_str}")
 
 
 
-
-        # Debounce delay
+        # Debounce delay ***
         time.sleep(DEBOUNCE_DELAY)
 
 finally:
