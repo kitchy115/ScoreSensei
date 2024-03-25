@@ -78,10 +78,10 @@ def get_note(note_number):
 def get_octave(note_number):
     return (note_number // 12) - 1 # // = truncating division
 
-def get_note_duration(start_time, end_time):
+def get_note_duration(start_time, end_time, error):
     duration = end_time - start_time
  
-    error = .51
+    # error = .51
 
     if abs(WHOLE_DURATION * error <= duration <= WHOLE_DURATION / error):
         return "whole"
@@ -461,12 +461,6 @@ def generate_rest(beat, measure, duration):
             file.write("</note>\n")
             beat += note_to_value[duration]
 
-    # maybe add if beats % 8 != 0
-    # then add rests until beat is completed
-    # i.e. measure has quarter note & eighth note
-    # user rests for beat and 1/2
-    # do eighth rest first, then quarter rest
-
     return beat, measure
 
 note_start_times = {}
@@ -499,7 +493,7 @@ try:
                     #rest is calculated by the current notes start time - the last notes end time
                     if last_note_end_time != 0: #if this is not there, then it prints 0 when there is no rest
                         d = "{:.4f}".format(note_start_times[note] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note]) # last as first and first as last?
+                        duration = get_note_duration(last_note_end_time, note_start_times[note], 0.8) # last as first and first as last?
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
@@ -510,7 +504,7 @@ try:
                         start_time = note_start_times.pop(note, None)
                         end_time = time.time()
                         d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
-                        duration = get_note_duration(start_time, end_time)
+                        duration = get_note_duration(start_time, end_time, 0.51)
                         note_name = get_note(note)
                         octave = get_octave(note)
 

@@ -11,9 +11,8 @@
   var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
     autoResize: true,
     backend: "svg",
-    drawingParameters: "compacttight",
     drawTitle: false,
-    pageFormat: "A4_P",
+    pageFormat: "A4_P"
   });
 
   setInterval(renderSheet, 100)
@@ -25,6 +24,7 @@
     osmd.load("http://localhost:8080/sheet.musicxml").then(
     function() {
       osmd.render();
+      // window.scrollTo(0, document.body.scrollHeight);
     });
   }
 </script>
