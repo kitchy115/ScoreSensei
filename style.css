@@ -20,6 +20,29 @@ body{
   background-color: #2C3526;
 }
 
+.bcenter {
+  margin: 0;
+  position: absolute;
+  top: 80%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.center {
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
 /*Declaring style for: Headers*/
 .header 
 {
@@ -35,11 +58,6 @@ body{
   <p>My supercool header</p>
 </div>
 */
-
-/*Need to add style to button (hover effect? etc)*/
-button {
-  all: unset;
-}
 
 nav {
   width: 100%;
@@ -126,13 +144,12 @@ a:hover {
 }
 
 p {
-  font-family: Sedgwick;
+  font-family: Tech;
   font-weight: 500;
   font-size: 14px;
 }
 h4 {
   font-family: Sedgwick;
-  font-weight: 600;
   font-size: 25px;
   color: white;
   text-align: center;
@@ -278,7 +295,7 @@ display: none;
   font-family: Sedgwick;  
   border-radius: 4px;
   height: 44px;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   text-transform: uppercase;
   -webkit-transition : all 200ms linear;
