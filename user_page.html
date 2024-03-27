@@ -7,7 +7,6 @@
         <title>SCORE SENSEI</title>
         <link rel="stylesheet" href="./style.css" />
         <link rel="shortcut icon" type="image/jpg" href="Images/SSLOGOICON.png"/>
-      </head>
 
       <!--NAV BAR-->
       <nav>
@@ -18,35 +17,59 @@
         <!--Using unordered list for nav bar-->
         <!--Eventually we will have to fill hrefs with actual file paths to other pages-->
         <ul>
-          <li><a href="#" class="link">About Us</a></li>
-          <li><a href="#" class="link">Show Case</a></li>
-          <li><a href="#" class="link">GitHub</a></li>
+          <li><a href="index.html" class="link">About Us</a></li>
+          <li><a href="index.html" class="link">Show Case</a></li>
+          <li><a href="https://github.com/kitchy115/CS-490-Capstone-Project" class="link">GitHub</a></li>
           <!--Make Login button instead?-->
-          <li><a href="#" class="link">Login</a></li>
+          <li><a href="login_page.html" class="link">Login</a></li>
         </ul>
       </nav>
 
       <div>
+
+      </head>
       <!--USER INPUT (for beats per min, time signature and key)-->
+
+      <body>
+
+        <div class = "section">
+
+          <div class="form-group" style = "width: 200px;">
+          <input type="number" name="bpm" class="form-style" placeholder="Beats per Minute">
+          <i class="input-icon uil uil-lock-alt"></i>
+          </div>
+
+          <div class="form-group mt-2" style = "width: 200px;">
+         <input type="number" name= "timesignature" class="form-style" placeholder="Time Signature">
+          <i class="input-icon uil uil-lock-alt"></i>
+        </div>
+
+        <div class="form-group mt-2" style = "width: 200px;">
+        <input type="number" name = "key" class="form-style" placeholder="Key">
+        <i class="input-icon uil uil-lock-alt"></i>
+        </div>
+      </div>
+<!--
+
       <form action="/submit">
-        <label for="Beats per minute" style="color: black; font-family: Sedgwick;">Beats per minute:</label>
+        <label for="Beats per minute" style="color: white; font-family: Tech;">Beats per minute:</label>
         <input type="text" id="Beats per minute" name="Beats per minute">
         <input type="submit" value="Submit">
      </form>
 
       <form action="/submit">
-        <label for="Time Signature" style="color: black; font-family: Sedgwick">Time Signature:</label>
+        <label for="Time Signature" style="color: white; font-family: Tech">Time Signature:</label>
         <input type="text" id="Time Signature" name="Time Signature">
         <input type="submit" value="Submit">
      </form>
 
      <form action="/submit">
-        <label for="Key" style="color: black; font-family: Sedgwick">Key:</label>
+        <label for="Key" style="color: white; font-family: Tech">Key:</label>
         <input type="text" id="Key" name="Key">
         <input type="submit" value="Submit">
      </form>
      </div>
-
+-->
      <!--MAIN CONTENT-->
 
      <!--SHEET MUSIC SETUP-->
@@ -54,5 +77,10 @@
      <!--DISPLAY-->
 
      <!--MAKE BEGIN RECORDING BUTTON (center @ bottom)-->
+     <div class = "bcenter">
+      <a href="#" class="btn mt-4">BEGIN RECORDING</a>
+    </div>
+
+  </body>
 
 </html>
