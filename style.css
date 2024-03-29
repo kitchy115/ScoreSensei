@@ -20,6 +20,14 @@ body{
   background-color: #2C3526;
 }
 
+.mcenter {
+  margin: 0;
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .bcenter {
   margin: 0;
   position: absolute;
