@@ -159,6 +159,12 @@ def get_closest_note(duration):
     else:
         return 0
     
+def get_chord(previous_note, note):
+    if (previous_note[0] != None and previous_note[0] - note[0] > -0.05
+        and previous_note[1] == note[1]):
+        return True
+    return False
+    
 def generate_note(beat, measure, duration, note_name, octave):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
@@ -466,6 +472,7 @@ def generate_rest(beat, measure, duration):
 note_start_times = {}
 beat = 0
 measure = 1
+previous_note = (None, None) # (start_time, duration)
 
 try:
     print('*** Ready to play ***')
@@ -507,8 +514,10 @@ try:
                         duration = get_note_duration(start_time, end_time, 0.51)
                         note_name = get_note(note)
                         octave = get_octave(note)
+                        is_chord = get_chord(previous_note, (start_time, duration))
+                        previous_note = (start_time, duration) # record for next note
 
-                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds")
+                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds, Chord:{is_chord}")
                         last_note_end_time = time.time() #update the last_note_end_time to be when the key is realirzed
 
                         if duration != "unknown":
