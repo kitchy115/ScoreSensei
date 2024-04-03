@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+
+  DjangoProjectName:
+    Type: String
+    Default: ScoreSensei
+    Description: The name of the Django Project
+
+  ThumbprintList:
+    Type: String
+    Default: 6938fd4d98bab03faadb97b34396831e3780aea1
+    Description: A thumbprint of an Open ID Connector is a SHA1 hash of the public certificate of the host
+
+  GithubRepoName:
+    Type: String
+    Default: kitchy115/CS-490-Capstone-Project
+    Description: GitHub repository name as username/repository
+
+Resources:
+
+# Set up EC2 Instance
+
+  WebServerInstance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          setup:
+            - install
+            - config
+        install:
+          packages:
+            yum:
+              nginx: []
+              python3.11: []
+          commands:
+            01-install-pip:
+              command: "python3.11 -m ensurepip --upgrade"
+            02-upgrade-pip:
+              command: "python3.11 -m pip install --upgrade pip"
+        config:
+          commands:
+            01-create-group:
+              command: "groupadd www"
+            02-add-group:
+              command: "usermod -a -G www ec2-user"
+    Properties:
+      ImageId: ami-0440d3b780d96b29d
+      InstanceType: t3.micro
+      AvailabilityZone: us-east-1a
+      SecurityGroups:
+        - Ref: EC2SecurityGroup
+      IamInstanceProfile:
+        Ref: EC2InstanceProfile
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+
+            yum install ruby -y
+            wget https://aws-codedeploy-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/latest/install
+            chmod +x ./install
+            ./install auto
+
+            yum install -y aws-cfn-bootstrap
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerInstance --configsets setup --region ${AWS::Region}
+            
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
+      Tags:
+        - Key: Name
+          Value: WebServerInstance
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access via port 80 and SSH
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: EC2Role
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-CodeDeployRoleforEC2
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+                - "codedeploy.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy'
+        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+
+# Set up GitHub
+
+  GitHubRole:
+    Type: AWS::IAM::Role
+    Properties:
+        RoleName: !Sub ${AWS::StackName}-CodeDeployRoleforGitHub
+        AssumeRolePolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRoleWithWebIdentity
+                Principal:
+                  Federated: !Ref OIDCProvider
+                Condition:
+                  StringLike:
+                    token.actions.githubusercontent.com:sub: !Sub repo:${GithubRepoName}:*
+        MaxSessionDuration: 3600
+        Description: "Github Actions role"
+        Policies:
+        - PolicyName: 'CodeDeployRoleforGitHub-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - 'codedeploy:Get*'
+              - 'codedeploy:Batch*'
+              - 'codedeploy:CreateDeployment'
+              - 'codedeploy:RegisterApplicationRevision'
+              - 'codedeploy:List*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:codedeploy:*:${AWS::AccountId}:*'
+
+  OIDCProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: "https://token.actions.githubusercontent.com"
+      ClientIdList:
+        - "sts.amazonaws.com"
+      ThumbprintList:
+        - !Ref ThumbprintList
+
+# Set up CodeDeploy
+
+  WebServerDeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApplication
+      ServiceRoleArn: !GetAtt CodeDeployRole.Arn
+      DeploymentConfigName: CodeDeployDefault.OneAtATime
+      DeploymentGroupName: WebServerDeployment
+      AutoRollbackConfiguration:
+          Enabled: true
+          Events:
+            - DEPLOYMENT_FAILURE
+            - DEPLOYMENT_STOP_ON_REQUEST
+      Ec2TagSet:
+        Ec2TagSetList:
+          - Ec2TagGroup:
+              - Type: KEY_AND_VALUE
+                Key: Name
+                Value: WebServerInstance
+
+  CodeDeployApplication:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Ref DjangoProjectName
+
+  CodeDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-CodeDeployRole
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "codedeploy.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole
+
+Outputs:
+
+  PublicIP:
+    Description: EC2 public IP
+    Value: !GetAtt WebServerInstance.PublicIp
+
+  GithubRoleArn:
+    Description: IAM role for GitHub
+    Value: !GetAtt GitHubRole.Arn

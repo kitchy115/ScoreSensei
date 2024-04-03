@@ -1,0 +1,14 @@
+version: 0.0
+os: linux
+files:
+  - source: /project
+    destination: /home/ec2-user/project
+hooks:
+  AfterInstall:
+    - location: aws/scripts/after-install.sh
+      timeout: 300
+      runas: root
+  ApplicationStart:
+    - location: aws/scripts/application-start.sh
+      timeout: 300
+      runas: root
