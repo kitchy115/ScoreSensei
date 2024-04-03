@@ -164,6 +164,18 @@ def get_chord(previous_note, note):
         and previous_note[1] == note[1]):
         return True
     return False
+
+def write_backup(beat):
+    with open("sheet.musicxml", "a") as file:
+        file.write("<backup>\n")
+        file.write(f"<duration>{beat}</duration>\n")
+        file.write("</backup>\n")
+
+def write_forward(beat):
+    with open("sheet.musicxml", "a") as file:
+        file.write("<foward>\n")
+        file.write(f"<duration>{beat}</duration>\n")
+        file.write("</foward>\n")
     
 def generate_note(beat, measure, duration, note_name, octave, chord):
     # Generate and append MusicXML note entry
@@ -177,10 +189,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
         # tie last note in measure 1 to left over beat (one quarter note) in measure 2
         if beat + note_to_value[duration] > 32:
             # add what can fit from this note into the measure
-            file.write("<note>")
+            file.write("<note>\n")
             if chord == True:
-                file.write("<chord/>")
-            file.write("<pitch>")
+                file.write("<chord/>\n")
+            file.write("<pitch>\n")
             file.write(f"<step>{note_name}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
@@ -212,10 +224,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                     file.write("</notations>\n")
                     file.write("</note>\n")
                     # display the second note
-                    file.write("<note>")
+                    file.write("<note>\n")
                     if chord == True:
-                        file.write("<chord/>")
-                    file.write("<pitch>")
+                        file.write("<chord/>\n")
+                    file.write("<pitch>\n")
                     file.write(f"<step>{note_name}</step>\n")
                     if "#" in note_name:
                         file.write("<alter>1</alter>\n")
@@ -247,10 +259,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             measure += 1
             # create new measure
             file.write(f"<measure number=\"{measure}\">\n")
-            file.write("<note>")
+            file.write("<note>\n")
             if chord == True:
-                file.write("<chord/>")
-            file.write("<pitch>")
+                file.write("<chord/>\n")
+            file.write("<pitch>\n")
             file.write(f"<step>{note_name}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
@@ -282,10 +294,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                     file.write("</notations>\n")
                     file.write("</note>\n")
                     # display the second note
-                    file.write("<note>")
+                    file.write("<note>\n")
                     if chord == True:
-                        file.write("<chord/>")
-                    file.write("<pitch>")
+                        file.write("<chord/>\n")
+                    file.write("<pitch>\n")
                     file.write(f"<step>{note_name}</step>\n")
                     if "#" in note_name:
                         file.write("<alter>1</alter>\n")
@@ -315,10 +327,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                 beat = note_to_value[duration] - (32-beat)
             # check if another tied note needs to be displayed
         elif beat + note_to_value[duration] == 32:
-            file.write("<note>")
+            file.write("<note>\n")
             if chord == True:
-                file.write("<chord/>")
-            file.write("<pitch>")
+                file.write("<chord/>\n")
+            file.write("<pitch>\n")
             file.write(f"<step>{note_name}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
@@ -332,10 +344,10 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             beat = 0
             file.write(f"<measure number=\"{measure}\">\n")
         else:
-            file.write("<note>")
+            file.write("<note>\n")
             if chord == True:
-                file.write("<chord/>")
-            file.write("<pitch>")
+                file.write("<chord/>\n")
+            file.write("<pitch>\n")
             file.write(f"<step>{note_name}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
@@ -494,6 +506,7 @@ beat = 0
 measure = 1
 previous_note = (None, None) # (start_time, duration)
 chord = False
+backup = False # flag for when a <backup> is used (needed to know when to place a <forward>)
 last_note_start_time = 0
 
 try:
@@ -518,22 +531,26 @@ try:
 
                 if status == 144 and velocity > 0:  # key pressed
                     # starts at 0, then gets updated IN the loop
-                    note_start_times[note] = time.time()
+                    note_start_times[note] = (time.time(), beat) # record start time and amount of beats in measure (used by <backup>)
                     #rest is calculated by the current notes start time - the last notes end time
 
                     # prevent chords from cloning rests, might need to tweak -0.05
-                    if last_note_end_time != 0 and last_note_start_time - note_start_times[note] < -0.05: #if this is not there, then it prints 0 when there is no rest
-                        d = "{:.4f}".format(note_start_times[note] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note], 0.8) # last as first and first as last?
+                    if last_note_end_time != 0 and last_note_start_time - note_start_times[note][0] < -0.05: #if this is not there, then it prints 0 when there is no rest
+                        # if backup == True:
+                            # write_forward(backup_amount) # need to change
+                            # backup = False
+                        
+                        d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
+                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.8) # last as first and first as last?
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
                             beat, measure = generate_rest(beat, measure, duration)
-                        last_note_start_time = note_start_times[note] # record start time for next note
+                        last_note_start_time = note_start_times[note][0] # record start time for next note
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
                     if note in note_start_times:
-                        start_time = note_start_times.pop(note, None)
+                        start_time, start_beat = note_start_times.pop(note, None)
                         end_time = time.time()
                         d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
                         duration = get_note_duration(start_time, end_time, 0.51)
@@ -552,6 +569,11 @@ try:
                                 beat = beat + note_to_value[previous_note[1]]
                             chord = False
 
+                        # if beat != start_beat and backup != True:
+                            # backup_amount = beat - start_beat
+                            # write_backup(backup_amount)
+                            # backup = True
+                        
                         previous_note = (start_time, duration) # record for next note
 
                         print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds, Chord:{chord}")
