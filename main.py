@@ -158,12 +158,6 @@ def get_closest_note(duration):
         return 1
     else:
         return 0
-    
-def get_chord(previous_note, note):
-    if (previous_note[0] != None and previous_note[0] - note[0] > -0.05
-        and previous_note[1] == note[1]):
-        return True
-    return False
 
 def write_backup(beat):
     with open("sheet.musicxml", "a") as file:
@@ -177,7 +171,7 @@ def write_forward(beat):
         file.write(f"<duration>{beat}</duration>\n")
         file.write("</foward>\n")
     
-def generate_note(beat, measure, duration, note_name, octave, chord):
+def generate_note(beat, measure, duration, note_name, octave, chord, voice):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         # determine beats in measure
@@ -203,6 +197,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                 # beginning of new stuff
                 if check_dotted(32-beat) != 0: # display as single dotted note
                     file.write(f"<duration>{32-beat}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     file.write(f"<type>{value_to_note[calc_dotted(32-beat)]}</type>\n")
                     file.write("<dot/>\n")
                     file.write("<notations>\n")
@@ -212,6 +207,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                 else: # display two tied notes 
                     # display first of two
                     file.write(f"<duration>{32-beat-get_closest_note(32-beat)}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     if 32-beat-get_closest_note(32-beat) not in value_to_note:
                         # represent as dotted
                         file.write(f"<type>{value_to_note[calc_dotted(32-beat-get_closest_note(32-beat))]}</type>\n")
@@ -234,6 +230,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                     file.write(f"<octave>{octave}</octave>\n")
                     file.write("</pitch>\n")
                     file.write(f"<duration>{get_closest_note(32-beat)}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     if get_closest_note(32-beat) not in value_to_note:
                         # represent as dotted
                         file.write(f"<type>{value_to_note[calc_dotted(get_closest_note(32-beat))]}</type>\n")
@@ -250,6 +247,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             else:
                 # display as a single normal note
                 file.write(f"<duration>{32-beat}</duration>\n")
+                file.write(f"<voice>{voice}</voice>\n")
                 file.write(f"<type>{value_to_note[32-beat]}</type>\n")
                 file.write("<notations>\n")
                 file.write("<tied type=\"start\"/>\n")
@@ -272,6 +270,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             if note_to_value[duration] - (32-beat) not in value_to_note:
                 if check_dotted(note_to_value[duration] - (32-beat)) != 0: # display as single dotted note
                     file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat))]}</type>\n")
                     file.write("<dot/>\n")
                     file.write("<notations>\n")
@@ -281,6 +280,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                 else: # display two tied notes
                     # display first of two
                     file.write(f"<duration>{note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat))}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     if note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat)) not in value_to_note:
                         # represent as dotted
                         file.write(f"<type>{value_to_note[calc_dotted(note_to_value[duration] - (32-beat)-get_closest_note(note_to_value[duration] - (32-beat)))]}</type>\n")
@@ -304,6 +304,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
                     file.write(f"<octave>{octave}</octave>\n")
                     file.write("</pitch>\n")
                     file.write(f"<duration>{get_closest_note(note_to_value[duration] - (32-beat))}</duration>\n")
+                    file.write(f"<voice>{voice}</voice>\n")
                     if get_closest_note(note_to_value[duration] - (32-beat)) not in value_to_note:
                         # represent as dotted
                         file.write(f"<type>{value_to_note[calc_dotted(get_closest_note(note_to_value[duration] - (32-beat)))]}</type>\n")
@@ -318,6 +319,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             else:
                 # display as one normal note
                 file.write(f"<duration>{note_to_value[duration] - (32-beat)}</duration>\n")
+                file.write(f"<voice>{voice}</voice>\n")
                 file.write(f"<type>{value_to_note[note_to_value[duration] - (32-beat)]}</type>\n")
                 file.write("<notations>\n")
                 file.write("<tied type=\"stop\"/>\n")
@@ -337,6 +339,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
             file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<voice>{voice}</voice>\n")
             file.write(f"<type>{duration}</type>\n")
             file.write("</note>\n")
             file.write("</measure>\n")
@@ -354,6 +357,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord):
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
             file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<voice>{voice}</voice>\n")
             file.write(f"<type>{duration}</type>\n")
             file.write("</note>\n")
             if chord == False:
@@ -508,6 +512,7 @@ previous_note = (None, None) # (start_time, duration)
 chord = False
 backup = False # flag for when a <backup> is used (needed to know when to place a <forward>)
 last_note_start_time = 0
+voice = 1
 
 try:
     print('*** Ready to play ***')
@@ -536,9 +541,9 @@ try:
 
                     # prevent chords from cloning rests, might need to tweak -0.05
                     if last_note_end_time != 0 and last_note_start_time - note_start_times[note][0] < -0.05: #if this is not there, then it prints 0 when there is no rest
-                        # if backup == True:
-                            # write_forward(backup_amount) # need to change
-                            # backup = False
+                        if backup == True:
+                            backup = False
+                            voice = 1
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
                         duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.8) # last as first and first as last?
@@ -556,7 +561,7 @@ try:
                         duration = get_note_duration(start_time, end_time, 0.51)
                         note_name = get_note(note)
                         octave = get_octave(note)
-                        # chord = get_chord(previous_note, (start_time, duration))
+
                         if (previous_note[0] != None and previous_note[0] - start_time > -0.05
                             and previous_note[1] == duration):
                             if chord == False:
@@ -569,10 +574,11 @@ try:
                                 beat = beat + note_to_value[previous_note[1]]
                             chord = False
 
-                        # if beat != start_beat and backup != True:
-                            # backup_amount = beat - start_beat
-                            # write_backup(backup_amount)
-                            # backup = True
+                        if beat != start_beat and backup != True:
+                            backup_amount = beat - start_beat
+                            write_backup(backup_amount)
+                            backup = True
+                            voice = 2
                         
                         previous_note = (start_time, duration) # record for next note
 
@@ -580,7 +586,7 @@ try:
                         last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
 
                         if duration != "unknown":
-                            beat, measure = generate_note(beat, measure, duration, note_name, octave, chord)
+                            beat, measure = generate_note(beat, measure, duration, note_name, octave, chord, voice)
                             print(f"beat: {beat} measure: {measure}")
                         
 finally:
