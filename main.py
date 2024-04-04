@@ -342,10 +342,11 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
             file.write(f"<voice>{voice}</voice>\n")
             file.write(f"<type>{duration}</type>\n")
             file.write("</note>\n")
-            file.write("</measure>\n")
-            measure += 1
-            beat = 0
-            file.write(f"<measure number=\"{measure}\">\n")
+            if chord == False:
+                file.write("</measure>\n")
+                measure += 1
+                beat = 0
+                file.write(f"<measure number=\"{measure}\">\n")
         else:
             file.write("<note>\n")
             if chord == True:
@@ -537,6 +538,7 @@ try:
                 if status == 144 and velocity > 0:  # key pressed
                     # starts at 0, then gets updated IN the loop
                     note_start_times[note] = (time.time(), beat) # record start time and amount of beats in measure (used by <backup>)
+                    print(f"Start time: {note_start_times[note][0]}, Start beat: {note_start_times[note][1]}")
                     #rest is calculated by the current notes start time - the last notes end time
 
                     # prevent chords from cloning rests, might need to tweak -0.05
@@ -546,12 +548,14 @@ try:
                             voice = 1
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.8) # last as first and first as last?
+                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.8)
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
                             beat, measure = generate_rest(beat, measure, duration)
-                        last_note_start_time = note_start_times[note][0] # record start time for next note
+                            note_start_times[note] = (note_start_times[note][0], beat) # update starting beat for note
+                            print(f"Updated start beat: {note_start_times[note][1]}")
+                        last_note_start_time = note_start_times[note][0] # record start time for next note  
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
                     if note in note_start_times:
@@ -572,11 +576,19 @@ try:
                         else:
                             if chord == True:
                                 beat = beat + note_to_value[previous_note[1]]
+                                start_beat = beat
+                                print(f"Updated start beat: {start_beat}")
+                                if beat == 32:
+                                    with open("sheet.musicxml", "a") as file:
+                                        file.write("</measure>\n")
+                                        measure += 1
+                                        beat = 0
+                                        file.write(f"<measure number=\"{measure}\">\n")
                             chord = False
 
                         if beat != start_beat and backup != True:
-                            backup_amount = beat - start_beat
-                            write_backup(backup_amount)
+                            write_backup(beat - start_beat)
+                            beat = start_beat
                             backup = True
                             voice = 2
                         
