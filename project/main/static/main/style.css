@@ -2,7 +2,7 @@
 @font-face 
 {
     font-family: 'Sedgwick';
-    src: url(../fonts/SedgwickAveDisplay-Regular.ttf);
+    src: url(SedgwickAveDisplay-Regular.ttf);
     font-weight: normal;
     font-style: normal;
 } 
@@ -11,7 +11,7 @@
 @font-face 
 {
     font-family: 'Tech';
-    src: url(../fonts/ShareTechMono-Regular.ttf);
+    src: url(ShareTechMono-Regular.ttf);
     font-weight: normal;
     font-style: normal;
 } 

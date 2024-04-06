@@ -44,10 +44,12 @@ Resources:
               command: "python3.11 -m pip install --upgrade pip"
         config:
           commands:
-            01-create-group:
+            01-create-www:
               command: "groupadd www"
-            02-add-group:
+            02-add-www-ec2-user:
               command: "usermod -a -G www ec2-user"
+            03-add-ec2-user-nginx:
+              command: "usermod -a -G ec2-user nginx"
     Properties:
       ImageId: ami-0440d3b780d96b29d
       InstanceType: t3.micro

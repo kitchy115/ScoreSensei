@@ -15,7 +15,7 @@ ALLOWED_HOSTS=${SERVER_IP}
 EOF
 
 
-# Install requirements
+# Install Requirements
 # --------------------------------------------------------------------------------
 
 python3.11 -m venv /home/ec2-user/project/.venv
@@ -23,6 +23,21 @@ python3.11 -m venv /home/ec2-user/project/.venv
 source /home/ec2-user/project/.venv/bin/activate
 
 python3.11 -m pip install -r /home/ec2-user/project/requirements.txt
+
+
+# Configure static files
+# --------------------------------------------------------------------------------
+
+cd /home/ec2-user/project
+
+python3.11 manage.py collectstatic --clear --noinput
+
+
+# Configure Permissions
+# --------------------------------------------------------------------------------
+
+chown -R ec2-user:ec2-user /home/ec2-user
+chmod -R 750 /home/ec2-user
 
 
 # Install and Configure Gunicorn
@@ -83,6 +98,10 @@ server {
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_pass http://unix:/run/gunicorn.sock;
+    }
+
+    location /static/ {
+        root /home/ec2-user/project;
     }
 }
 
