@@ -90,32 +90,28 @@ def get_note(note_number):
 def get_octave(note_number):
     return (note_number // 12) - 1 # // = truncating division
 
-def get_note_duration(start_time, end_time, error):
+def get_note_duration(start_time, end_time):
     duration = end_time - start_time
- 
-    # error = .51
 
-    beat_type = 1/4 # 1 beat = 1 quarter note (1/4 note)
-
-    if abs(WHOLE_DURATION < duration):
+    if abs(WHOLE_DURATION - (WHOLE_DURATION - (HALF_DURATION + QUARTER_DURATION)) / 2 < duration):
         return "whole", False
-    elif abs(HALF_DURATION + QUARTER_DURATION < duration):
+    elif abs((HALF_DURATION + QUARTER_DURATION) - ((HALF_DURATION + QUARTER_DURATION) - HALF_DURATION) / 2 < duration):
         return "half", True
-    elif abs(HALF_DURATION < duration):
+    elif abs(HALF_DURATION - (HALF_DURATION - (QUARTER_DURATION + EIGHTH_DURATION)) / 2 < duration):
         return "half", False
-    elif abs(QUARTER_DURATION + EIGHTH_DURATION < duration):
+    elif abs((QUARTER_DURATION + EIGHTH_DURATION) - ((QUARTER_DURATION + EIGHTH_DURATION) - QUARTER_DURATION) / 2 < duration):
         return "quarter", True
-    elif abs(QUARTER_DURATION < duration):
+    elif abs(QUARTER_DURATION - (QUARTER_DURATION - (EIGHTH_DURATION + SIXTEENTH_DURATION)) / 2 < duration):
         return "quarter", False
-    elif abs(EIGHTH_DURATION + SIXTEENTH_DURATION < duration):
+    elif abs((EIGHTH_DURATION + SIXTEENTH_DURATION) - ((EIGHTH_DURATION + SIXTEENTH_DURATION) - EIGHTH_DURATION) / 2 < duration):
         return "eighth", True
-    elif abs(EIGHTH_DURATION < duration):
+    elif abs(EIGHTH_DURATION - (EIGHTH_DURATION - (SIXTEENTH_DURATION + THIRTY_SECOND_DURATION)) / 2 < duration):
         return "eighth", False
-    elif abs(SIXTEENTH_DURATION + THIRTY_SECOND_DURATION < duration):
+    elif abs((SIXTEENTH_DURATION + THIRTY_SECOND_DURATION) - ((SIXTEENTH_DURATION + THIRTY_SECOND_DURATION) - SIXTEENTH_DURATION) / 2 < duration):
         return "16th", True
-    elif abs(SIXTEENTH_DURATION < duration):
+    elif abs(SIXTEENTH_DURATION - (SIXTEENTH_DURATION - (THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2)) / 2 < duration):
         return "16th", False
-    elif abs(THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2 < duration):
+    elif abs((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - ((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - THIRTY_SECOND_DURATION) / 2 < duration):
         return "32nd", True
     elif abs(THIRTY_SECOND_DURATION < duration):
         return "32nd", False
@@ -622,8 +618,8 @@ try:
 
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
-                        duration, dotted = get_note_duration(last_note_end_time, note_start_times[note][0], 0.83)
-                        print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
+                        duration, dotted = get_note_duration(last_note_end_time, note_start_times[note][0])
+                        print(f"Rest Time: {duration}, Dotted:{dotted}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
                             beat, measure = generate_rest(beat, measure, duration, dotted)
@@ -636,7 +632,7 @@ try:
                         start_time, start_beat = note_start_times.pop(note, None)
                         end_time = time.time()
                         d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
-                        duration, dotted = get_note_duration(start_time, end_time, 0.51)
+                        duration, dotted = get_note_duration(start_time, end_time)
                         note_name = get_note(note)
                         octave = get_octave(note)
                         staff = get_staff(note_name, octave)
