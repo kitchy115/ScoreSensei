@@ -83,24 +83,27 @@ def get_note_duration(start_time, end_time, error):
  
     # error = .51
 
-    if abs(WHOLE_DURATION * error <= duration <= WHOLE_DURATION / error):
+    beat_type = 1/4 # 1 beat = 1 quarter note (1/4 note)
+
+                                                                    # in ?/4
+    if abs(WHOLE_DURATION - WHOLE_DURATION * beat_type < duration): # 3s <
         return "whole"
-    elif abs(HALF_DURATION * error <= duration <= HALF_DURATION / error):
+    elif abs(HALF_DURATION - HALF_DURATION * beat_type < duration): # 1.5s <
         return "half"
-    elif abs(QUARTER_DURATION * error <= duration <= QUARTER_DURATION / error):
+    elif abs(QUARTER_DURATION - QUARTER_DURATION * beat_type < duration): # 0.75s < 
         return "quarter"
-    elif abs(EIGHTH_DURATION * error <= duration <= EIGHTH_DURATION / error):
+    elif abs(EIGHTH_DURATION - EIGHTH_DURATION * beat_type < duration): # 0.375s <
         return "eighth"
-    elif abs(SIXTEENTH_DURATION * error <= duration <= SIXTEENTH_DURATION / error):
+    elif abs(SIXTEENTH_DURATION - SIXTEENTH_DURATION * beat_type < duration): # 0.1875s <
         return "16th"
-    elif abs(THIRTY_SECOND_DURATION * error <= duration <= THIRTY_SECOND_DURATION / error):
+    elif abs(THIRTY_SECOND_DURATION < duration): # already so small
         return "32nd"
     else:
         return "unknown"
 
 # only works in 4/4
 def calc_dotted(duration):
-    if duration - 32> 0: # dotted whole
+    if duration - 32 > 0: # dotted whole
         return 32
     elif duration - 16 > 0: # dotted half
         return 16
@@ -181,7 +184,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
         # i.e. measure one has 3 beats, user plays a half note
         # leave quater note in measure 1, create measure two
         # tie last note in measure 1 to left over beat (one quarter note) in measure 2
-        if beat + note_to_value[duration] > 32:
+        if beat + note_to_value[duration] > 32 and measureless == False:
             # add what can fit from this note into the measure
             file.write("<note>\n")
             if chord == True:
@@ -328,7 +331,7 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
             if chord == False:
                 beat = note_to_value[duration] - (32-beat)
             # check if another tied note needs to be displayed
-        elif beat + note_to_value[duration] == 32:
+        elif beat + note_to_value[duration] == 32 and measureless == False:
             file.write("<note>\n")
             if chord == True:
                 file.write("<chord/>\n")
@@ -376,7 +379,7 @@ def generate_rest(beat, measure, duration):
         # i.e. measure one has 3 beats, user plays a half note
         # leave quater note in measure 1, create measure two
         # tie last note in measure 1 to left over beat (one quarter note) in measure 2
-        if beat + note_to_value[duration] > 32:
+        if beat + note_to_value[duration] > 32 and measureless == False:
             # add what can fit from this note into the measure
             file.write("<note>\n")
             file.write("<rest/>\n")
@@ -486,7 +489,7 @@ def generate_rest(beat, measure, duration):
                 file.write("</note>\n")
             beat = note_to_value[duration] - (32-beat)
             # check if another tied note needs to be displayed
-        elif beat + note_to_value[duration] == 32:
+        elif beat + note_to_value[duration] == 32 and measureless == False:
             file.write("<note>\n")
             file.write("<rest/>\n")
             file.write(f"<duration>{note_to_value[duration]}</duration>\n")
@@ -514,6 +517,7 @@ chord = False
 backup = False # flag for when a <backup> is used (needed to know when to place a <forward>)
 last_note_start_time = 0
 voice = 1
+measureless = True
 
 try:
     print('*** Ready to play ***')
@@ -524,7 +528,7 @@ try:
 
     last_note_end_time = 0 # when the last note ends
 
-    while not keyboard.is_pressed('q'):
+    while not keyboard.is_pressed('`'):
         # Detect keypress on input
         if input_device.poll():
             # Get MIDI even information
@@ -541,14 +545,26 @@ try:
                     print(f"Start time: {note_start_times[note][0]}, Start beat: {note_start_times[note][1]}")
                     #rest is calculated by the current notes start time - the last notes end time
 
-                    # prevent chords from cloning rests, might need to tweak -0.05
-                    if last_note_end_time != 0 and last_note_start_time - note_start_times[note][0] < -0.05: #if this is not there, then it prints 0 when there is no rest
+                    # prevent chords from cloning rests, might need to tweak -0.06
+                    if last_note_end_time != 0 and last_note_start_time - note_start_times[note][0] < -0.06: #if this is not there, then it prints 0 when there is no rest
                         if backup == True:
                             backup = False
                             voice = 1
+                        if chord == True:
+                            beat = beat + note_to_value[previous_note[1]]
+                            note_start_times[note] = (note_start_times[note][0], beat)
+                            print(f"Updated start beat: {start_beat}")
+                            if beat == 32 and measureless == False:
+                                with open("sheet.musicxml", "a") as file:
+                                    file.write("</measure>\n")
+                                    measure += 1
+                                    beat = 0
+                                    file.write(f"<measure number=\"{measure}\">\n")
+                            chord = False
+
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.8)
+                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.83)
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
@@ -566,27 +582,34 @@ try:
                         note_name = get_note(note)
                         octave = get_octave(note)
 
-                        if (previous_note[0] != None and previous_note[0] - start_time > -0.05
+                        if (previous_note[0] != None and previous_note[0] - start_time > -0.06
                             and previous_note[1] == duration):
                             if chord == False:
+                                if measure == 0 and measureless == False: # must remove newly created measure
+                                    with open("sheet.musicxml", "r+") as file:
+                                        lines = file.readlines()
+                                        file.seek(0)
+                                        file.truncate()
+                                        file.writelines(lines[:-2])
                                 beat = beat - note_to_value[duration] # remove added beat from first note in chord
                                 if beat < 0:
                                     beat = 0
                             chord = True
-                        else:
-                            if chord == True:
-                                beat = beat + note_to_value[previous_note[1]]
-                                start_beat = beat
-                                print(f"Updated start beat: {start_beat}")
-                                if beat == 32:
-                                    with open("sheet.musicxml", "a") as file:
-                                        file.write("</measure>\n")
-                                        measure += 1
-                                        beat = 0
-                                        file.write(f"<measure number=\"{measure}\">\n")
-                            chord = False
+                        #else:
+                            #if chord == True:
+                                #beat = beat + note_to_value[previous_note[1]]
+                                #start_beat = beat
+                                #print(f"Updated start beat: {start_beat}")
+                                #if beat == 32 and measureless == False:
+                                    #with open("sheet.musicxml", "a") as file:
+                                        #file.write("</measure>\n")
+                                        #measure += 1
+                                        #beat = 0
+                                        #file.write(f"<measure number=\"{measure}\">\n")
+                            #chord = False
 
                         if beat != start_beat and backup != True:
+                            print(f"{beat} != {start_beat}, Writing backup:{beat - start_beat}")
                             write_backup(beat - start_beat)
                             beat = start_beat
                             backup = True
