@@ -23,10 +23,15 @@ template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
             "<beats>4</beats>\n",
             "<beat-type>4</beat-type>\n",
             "</time>\n",
-            "<clef>\n",
+            "<staves>2</staves>\n",
+            "<clef number=\"1\">\n",
             "<sign>G</sign>\n",
             "<line>2</line>\n",
             "</clef>\n",
+            "<clef number=\"2\">\n",
+            "<sign>F</sign>\n",
+            "<line>4</line>\n",
+            "</clef>\n"
             "</attributes>\n"]
 
 template_ending = ["</measure>\n",
@@ -36,12 +41,12 @@ template_ending = ["</measure>\n",
 note_template = ["<note>\n",
                  "<pitch>\n"]
 
-note_to_value = {"quarter": 8,
-                 "half": 16,
-                 "whole": 32,
-                 "eighth": 4,
-                 "16th": 2,
-                 "32nd": 1}
+n_to_v = {"quarter": 8,
+          "half": 16,
+          "whole": 32,
+          "eighth": 4,
+          "16th": 2,
+          "32nd": 1}
 
 value_to_note = {8: "quarter",
                  16: "half",
@@ -49,6 +54,13 @@ value_to_note = {8: "quarter",
                  4: "eighth",
                  2: "16th",
                  1: "32nd"}
+
+v_to_n = {8: "quarter",
+          16: "half",
+          32: "whole",
+          4: "eighth",
+          2: "16th",
+          1: "32nd"}
 
 midi.init()
 
@@ -85,21 +97,30 @@ def get_note_duration(start_time, end_time, error):
 
     beat_type = 1/4 # 1 beat = 1 quarter note (1/4 note)
 
-                                                                    # in ?/4
-    if abs(WHOLE_DURATION - WHOLE_DURATION * beat_type < duration): # 3s <
-        return "whole"
-    elif abs(HALF_DURATION - HALF_DURATION * beat_type < duration): # 1.5s <
-        return "half"
-    elif abs(QUARTER_DURATION - QUARTER_DURATION * beat_type < duration): # 0.75s < 
-        return "quarter"
-    elif abs(EIGHTH_DURATION - EIGHTH_DURATION * beat_type < duration): # 0.375s <
-        return "eighth"
-    elif abs(SIXTEENTH_DURATION - SIXTEENTH_DURATION * beat_type < duration): # 0.1875s <
-        return "16th"
-    elif abs(THIRTY_SECOND_DURATION < duration): # already so small
-        return "32nd"
+    if abs(WHOLE_DURATION < duration):
+        return "whole", False
+    elif abs(HALF_DURATION + QUARTER_DURATION < duration):
+        return "half", True
+    elif abs(HALF_DURATION < duration):
+        return "half", False
+    elif abs(QUARTER_DURATION + EIGHTH_DURATION < duration):
+        return "quarter", True
+    elif abs(QUARTER_DURATION < duration):
+        return "quarter", False
+    elif abs(EIGHTH_DURATION + SIXTEENTH_DURATION < duration):
+        return "eighth", True
+    elif abs(EIGHTH_DURATION < duration):
+        return "eighth", False
+    elif abs(SIXTEENTH_DURATION + THIRTY_SECOND_DURATION < duration):
+        return "16th", True
+    elif abs(SIXTEENTH_DURATION < duration):
+        return "16th", False
+    elif abs(THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2 < duration):
+        return "32nd", True
+    elif abs(THIRTY_SECOND_DURATION < duration):
+        return "32nd", False
     else:
-        return "unknown"
+        return "unknown", False
 
 # only works in 4/4
 def calc_dotted(duration):
@@ -161,6 +182,30 @@ def get_closest_note(duration):
         return 1
     else:
         return 0
+    
+def note_to_value(duration, dotted):
+    result = n_to_v[duration]
+    if dotted == True:
+        result = result + n_to_v[duration] / 2
+    return result
+
+def get_staff(note, octave):
+    if octave > 4: # greater than C4
+        return 1
+    
+    if octave == 4:
+        match note:
+            case "A":
+                return 2 # less than C4
+            case "A#":
+                return 2 # less than C4
+            case "B":
+                return 2 # less than C4
+            case "B#":
+                return 2 # less than C4
+            case _:
+                return 1 # C4 or greater
+    return 2 # less than C4
 
 def write_backup(beat):
     with open("sheet.musicxml", "a") as file:
@@ -174,7 +219,7 @@ def write_forward(beat):
         file.write(f"<duration>{beat}</duration>\n")
         file.write("</foward>\n")
     
-def generate_note(beat, measure, duration, note_name, octave, chord, voice):
+def generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         # determine beats in measure
@@ -184,7 +229,9 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
         # i.e. measure one has 3 beats, user plays a half note
         # leave quater note in measure 1, create measure two
         # tie last note in measure 1 to left over beat (one quarter note) in measure 2
-        if beat + note_to_value[duration] > 32 and measureless == False:
+
+        # TODO add dotted and staff support
+        if beat + note_to_value(duration, dotted) > 32 and measureless == False:
             # add what can fit from this note into the measure
             file.write("<note>\n")
             if chord == True:
@@ -331,7 +378,8 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
             if chord == False:
                 beat = note_to_value[duration] - (32-beat)
             # check if another tied note needs to be displayed
-        elif beat + note_to_value[duration] == 32 and measureless == False:
+        # TODO add dotted and staff support
+        elif beat + note_to_value(duration, dotted) == 32 and measureless == False:
             file.write("<note>\n")
             if chord == True:
                 file.write("<chord/>\n")
@@ -360,16 +408,19 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice):
                 file.write("<alter>1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
-            file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
             file.write(f"<voice>{voice}</voice>\n")
             file.write(f"<type>{duration}</type>\n")
+            if dotted == True:
+                file.write(f"<dot/>\n")
+            file.write(f"<staff>{staff}</staff>\n")
             file.write("</note>\n")
             if chord == False:
-                beat += note_to_value[duration]
+                beat += note_to_value(duration, dotted)
 
     return beat, measure
 
-def generate_rest(beat, measure, duration):
+def generate_rest(beat, measure, duration, dotted):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         # determine beats in measure
@@ -379,11 +430,13 @@ def generate_rest(beat, measure, duration):
         # i.e. measure one has 3 beats, user plays a half note
         # leave quater note in measure 1, create measure two
         # tie last note in measure 1 to left over beat (one quarter note) in measure 2
-        if beat + note_to_value[duration] > 32 and measureless == False:
+        if beat + note_to_value(duration, dotted) > 32 and measureless == False:
             # add what can fit from this note into the measure
             file.write("<note>\n")
             file.write("<rest/>\n")
             # check that 32-beat can be displayed as a single note
+
+            # TODO add dotted support and staff support
             if 32-beat not in value_to_note: # cannot dislay as a single normal note
                 # beginning of new stuff
                 if check_dotted(32-beat) != 0: # display as single dotted note
@@ -489,10 +542,12 @@ def generate_rest(beat, measure, duration):
                 file.write("</note>\n")
             beat = note_to_value[duration] - (32-beat)
             # check if another tied note needs to be displayed
-        elif beat + note_to_value[duration] == 32 and measureless == False:
+
+            # TODO add dotted support and staff support
+        elif beat + note_to_value(duration, dotted) == 32 and measureless == False:
             file.write("<note>\n")
             file.write("<rest/>\n")
-            file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
             file.write(f"<type>{duration}</type>\n")
             file.write("</note>\n")
             file.write("</measure>\n")
@@ -500,19 +555,22 @@ def generate_rest(beat, measure, duration):
             beat = 0
             file.write(f"<measure number=\"{measure}\">\n")
         else:
+            # TODO add staff support
             file.write("<note>\n")
             file.write("<rest/>\n")
-            file.write(f"<duration>{note_to_value[duration]}</duration>\n")
+            file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
             file.write(f"<type>{duration}</type>\n")
+            if dotted == True:
+                file.write(f"<dot/>\n")
             file.write("</note>\n")
-            beat += note_to_value[duration]
+            beat += note_to_value(duration, dotted)
 
     return beat, measure
 
 note_start_times = {}
 beat = 0
 measure = 1
-previous_note = (None, None) # (start_time, duration)
+previous_note = (None, None, None) # (start_time, duration)
 chord = False
 backup = False # flag for when a <backup> is used (needed to know when to place a <forward>)
 last_note_start_time = 0
@@ -551,7 +609,7 @@ try:
                             backup = False
                             voice = 1
                         if chord == True:
-                            beat = beat + note_to_value[previous_note[1]]
+                            beat = beat + note_to_value(previous_note[1], previous_note[2])
                             note_start_times[note] = (note_start_times[note][0], beat)
                             print(f"Updated start beat: {start_beat}")
                             if beat == 32 and measureless == False:
@@ -564,11 +622,11 @@ try:
 
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
-                        duration = get_note_duration(last_note_end_time, note_start_times[note][0], 0.83)
+                        duration, dotted = get_note_duration(last_note_end_time, note_start_times[note][0], 0.83)
                         print(f"Rest Time: {duration}, Exact Duration:{d} seconds")
 
                         if duration != "unknown":
-                            beat, measure = generate_rest(beat, measure, duration)
+                            beat, measure = generate_rest(beat, measure, duration, dotted)
                             note_start_times[note] = (note_start_times[note][0], beat) # update starting beat for note
                             print(f"Updated start beat: {note_start_times[note][1]}")
                         last_note_start_time = note_start_times[note][0] # record start time for next note  
@@ -578,26 +636,28 @@ try:
                         start_time, start_beat = note_start_times.pop(note, None)
                         end_time = time.time()
                         d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
-                        duration = get_note_duration(start_time, end_time, 0.51)
+                        duration, dotted = get_note_duration(start_time, end_time, 0.51)
                         note_name = get_note(note)
                         octave = get_octave(note)
+                        staff = get_staff(note_name, octave)
 
                         if (previous_note[0] != None and previous_note[0] - start_time > -0.06
-                            and previous_note[1] == duration):
+                            and previous_note[1] == duration and previous_note[2] == dotted):
                             if chord == False:
+                                # TODO add dotted support and staff support
                                 if measure == 0 and measureless == False: # must remove newly created measure
                                     with open("sheet.musicxml", "r+") as file:
                                         lines = file.readlines()
                                         file.seek(0)
                                         file.truncate()
                                         file.writelines(lines[:-2])
-                                beat = beat - note_to_value[duration] # remove added beat from first note in chord
+                                beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
                                 if beat < 0:
                                     beat = 0
                             chord = True
                         #else:
                             #if chord == True:
-                                #beat = beat + note_to_value[previous_note[1]]
+                                #beat = beat + note_to_value(previous_note[1], previous_note[2])
                                 #start_beat = beat
                                 #print(f"Updated start beat: {start_beat}")
                                 #if beat == 32 and measureless == False:
@@ -615,13 +675,13 @@ try:
                             backup = True
                             voice = 2
                         
-                        previous_note = (start_time, duration) # record for next note
+                        previous_note = (start_time, duration, dotted) # record for next note
 
-                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Exact Duration:{d} seconds, Chord:{chord}")
+                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Dotted:{dotted}, Exact Duration:{d} seconds, Chord:{chord}")
                         last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
 
                         if duration != "unknown":
-                            beat, measure = generate_note(beat, measure, duration, note_name, octave, chord, voice)
+                            beat, measure = generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff)
                             print(f"beat: {beat} measure: {measure}")
                         
 finally:
