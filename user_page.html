@@ -46,32 +46,37 @@
         <i class="input-icon uil uil-lock-alt"></i>
         </div>
       </div>
-<!--
 
-      <form action="/submit">
-        <label for="Beats per minute" style="color: white; font-family: Tech;">Beats per minute:</label>
-        <input type="text" id="Beats per minute" name="Beats per minute">
-        <input type="submit" value="Submit">
-     </form>
-
-      <form action="/submit">
-        <label for="Time Signature" style="color: white; font-family: Tech">Time Signature:</label>
-        <input type="text" id="Time Signature" name="Time Signature">
-        <input type="submit" value="Submit">
-     </form>
-
-     <form action="/submit">
-        <label for="Key" style="color: white; font-family: Tech">Key:</label>
-        <input type="text" id="Key" name="Key">
-        <input type="submit" value="Submit">
-     </form>
-     </div>
--->
      <!--MAIN CONTENT-->
 
      <!--SHEET MUSIC SETUP-->
 
      <!--DISPLAY-->
+
+     <script src="opensheetmusicdisplay.min.js"></script>
+     <div id="osmdCanvas"/>
+     
+     <script>
+       var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
+         autoResize: true,
+         backend: "svg",
+         drawTitle: false,
+         pageFormat: "A4_P"
+       });
+     
+       setInterval(renderSheet, 100)
+     
+       function renderSheet()
+       {
+         fetch("http://localhost:8080/sheet.musicxml", {cache:"no-cache"})
+     
+         osmd.load("http://localhost:8080/sheet.musicxml").then(
+         function() {
+           osmd.render();
+           // window.scrollTo(0, document.body.scrollHeight);
+         });
+       }
+     </script>     
 
      <!--MAKE BEGIN RECORDING BUTTON (center @ bottom)-->
      <div class = "bcenter">
