@@ -1,8 +1,8 @@
 /*Declaring font - Would be used for headers*/
 @font-face 
 {
-    font-family: 'Sedgwick';
-    src: url(Fonts/SedgwickAveDisplay-Regular.ttf);
+    font-family: 'CormorantGaramond';
+    src: url(Fonts/CormorantGaramond-SemiBold.ttf);
     font-weight: normal;
     font-style: normal;
 } 
@@ -15,7 +15,7 @@
     font-weight: normal;
     font-style: normal;
 } 
-
+/*Background color for all pages on the website*/
 body{
   background-color: #b3c2a8;
 }
@@ -31,8 +31,16 @@ body{
 .bcenter {
   margin: 0;
   position: absolute;
-  top: 80%;
+  top: 90%;
   left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.bcenter-index {
+  margin: 0;
+  position: absolute;
+  top: 90%;
+  left: 80%;
   transform: translate(-50%, -50%);
 }
 
@@ -54,7 +62,7 @@ body{
 /*Declaring style for: Headers*/
 .header 
 {
-    font-family: Sedwick;
+    font-family: CormorantGaramond;
     font-size: 70px;
     color: white;
     /* could add text allign here if needed*/ 
@@ -88,12 +96,13 @@ ul {
   font-size: 20px;
   padding: 0.5rem;
   position: relative;
-  font-family: Sedgwick;
+  left: 175px;
+  font-family: CormorantGaramond;
 }
 
 .logo {
-  width: 24px;
-  height: 24px;
+  width: 50px;
+  height: 65px;
 }
 
 .menu-icon {
@@ -102,7 +111,18 @@ ul {
   height: 24px;
 }
 
-/* Media Query for Responsive behavior of the Navbar */
+/*-----------------------------------------------------USER PAGE (BPM, TIME SIGNATURE, KEY)-----------------------------------------------------*/
+.user-section{
+  display: flex;
+  flex-direction: row; /*Buttons will be across the top just below the navigation menu*/
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center items vertically */
+  margin-top: 50px; /*Brings down the bpm/time/key section a little bit down more */
+  gap: 200px; /* Add space between the buttons horizontally */
+  margin-right: 75px;
+}
+
+/*-----------------------------------------------------Media Query for Responsive behavior of the Navbar-----------------------------------------------------*/
 @media only screen and (max-width: 600px) {
   .menu-icon {
     display: block;
@@ -113,7 +133,7 @@ ul {
   }
 }
 
-/* Link and Logo Hover Effects */
+/*-----------------------------------------------------Link and Logo Hover Effects-----------------------------------------------------*/
 .link::before {
   content: "";
   position: absolute;
@@ -141,7 +161,7 @@ ul {
   opacity: 0.5;
 }
 
-/*LOGIN CSS*/
+/*-----------------------------------------------------LOGIN CSS-----------------------------------------------------*/
 
 a:hover {
 	text-decoration: none;
@@ -157,23 +177,24 @@ p {
   font-size: 14px;
 }
 h4 {
-  font-family: Sedgwick;
+  font-family: CormorantGaramond;
   font-size: 25px;
   color: white;
   text-align: center;
 }
 h6 span{
-  font-family: Sedgwick;
+  font-family: CormorantGaramond;
   padding: 0 20px;
   font-weight: 700;
 }
 .section{
   display: flex;
-  flex-direction: row; /*Buttons will be across the top just below the navigation menu*/
+  flex-direction: column; /*Buttons will be across the top just below the navigation menu*/
   align-items: center; /* Center items horizontally */
   justify-content: center; /* Center items vertically */
   margin-top: 50px; /*Brings down the bpm/time/key section a little bit down more */
 }
+
 .full-height{
   min-height: 100vh;
 }
@@ -302,7 +323,7 @@ display: none;
    transition: all 200ms linear;
 }
 .btn{
-  font-family: Sedgwick;  
+  font-family: CormorantGaramond;  
   border-radius: 4px;
   height: 44px;
   font-size: 15px;
