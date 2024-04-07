@@ -168,9 +168,11 @@ h6 span{
   font-weight: 700;
 }
 .section{
-  position: relative;
-  width: 100%;
-  display: block;
+  display: flex;
+  flex-direction: row; /*Buttons will be across the top just below the navigation menu*/
+  align-items: center; /* Center items horizontally */
+  justify-content: center; /* Center items vertically */
+  margin-top: 50px; /*Brings down the bpm/time/key section a little bit down more */
 }
 .full-height{
   min-height: 100vh;
