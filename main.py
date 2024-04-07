@@ -411,8 +411,8 @@ def generate_note(beat, measure, duration, note_name, octave, chord, voice, dott
                 file.write(f"<dot/>\n")
             file.write(f"<staff>{staff}</staff>\n")
             file.write("</note>\n")
-            if chord == False:
-                beat += note_to_value(duration, dotted)
+            # if chord == False:
+            beat += note_to_value(duration, dotted)
 
     return beat, measure
 
@@ -604,16 +604,17 @@ try:
                         if backup == True:
                             backup = False
                             voice = 1
+                            # write_forward(beat - start_beat) # should be previous note's start_beat
                         if chord == True:
-                            beat = beat + note_to_value(previous_note[1], previous_note[2])
-                            note_start_times[note] = (note_start_times[note][0], beat)
-                            print(f"Updated start beat: {start_beat}")
-                            if beat == 32 and measureless == False:
-                                with open("sheet.musicxml", "a") as file:
-                                    file.write("</measure>\n")
-                                    measure += 1
-                                    beat = 0
-                                    file.write(f"<measure number=\"{measure}\">\n")
+                            # beat = beat + note_to_value(previous_note[1], previous_note[2])
+                            # note_start_times[note] = (note_start_times[note][0], beat)
+                            # print(f"Updated start beat: {start_beat}")
+                            # if beat == 32 and measureless == False:
+                                # with open("sheet.musicxml", "a") as file:
+                                    # file.write("</measure>\n")
+                                    # measure += 1
+                                    # beat = 0
+                                    # file.write(f"<measure number=\"{measure}\">\n")
                             chord = False
 
                         
@@ -638,20 +639,21 @@ try:
                         staff = get_staff(note_name, octave)
 
                         if (previous_note[0] != None and previous_note[0] - start_time > -0.06
-                            and previous_note[1] == duration and previous_note[2] == dotted):
-                            if chord == False:
-                                # TODO add dotted support and staff support
-                                if measure == 0 and measureless == False: # must remove newly created measure
-                                    with open("sheet.musicxml", "r+") as file:
-                                        lines = file.readlines()
-                                        file.seek(0)
-                                        file.truncate()
-                                        file.writelines(lines[:-2])
-                                beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
-                                if beat < 0:
-                                    beat = 0
+                            and previous_note[1] == duration and previous_note[2] == dotted
+                            and duration != "unknown"):
+                            # if chord == False:
+                            # TODO add dotted support and staff support
+                            if measure == 0 and measureless == False: # must remove newly created measure
+                                with open("sheet.musicxml", "r+") as file:
+                                    lines = file.readlines()
+                                    file.seek(0)
+                                    file.truncate()
+                                    file.writelines(lines[:-2])
+                            beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
+                            if beat < 0:
+                                beat = 0
                             chord = True
-                        #else:
+                        else:
                             #if chord == True:
                                 #beat = beat + note_to_value(previous_note[1], previous_note[2])
                                 #start_beat = beat
@@ -662,7 +664,7 @@ try:
                                         #measure += 1
                                         #beat = 0
                                         #file.write(f"<measure number=\"{measure}\">\n")
-                            #chord = False
+                            chord = False
 
                         if beat != start_beat and backup != True:
                             print(f"{beat} != {start_beat}, Writing backup:{beat - start_beat}")
