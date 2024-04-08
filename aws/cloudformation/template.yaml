@@ -31,25 +31,38 @@ Resources:
         configSets:
           setup:
             - install
-            - config
+            - config_users
+            - config_https
         install:
           packages:
             yum:
               nginx: []
               python3.11: []
           commands:
-            01-install-pip:
-              command: "python3.11 -m ensurepip --upgrade"
-            02-upgrade-pip:
-              command: "python3.11 -m pip install --upgrade pip"
-        config:
+            01-create-venv:
+              command: "python3.11 -m venv /home/ec2-user/venv"
+            02-install-pip:
+              command: "source /home/ec2-user/venv/bin/activate && python3.11 -m ensurepip --upgrade && python3.11 -m pip install --upgrade pip"
+              ignoreErrors: "true"
+            03-install-gunicorn:
+              command: "source /home/ec2-user/venv/bin/activate && python3.11 -m pip install gunicorn"
+              ignoreErrors: "true"
+        config_users:
           commands:
-            01-create-www:
-              command: "groupadd www"
-            02-add-www-ec2-user:
-              command: "usermod -a -G www ec2-user"
-            03-add-ec2-user-nginx:
+            01-ec2-user:
+              command: "groupadd www && usermod -a -G www ec2-user"
+              ignoreErrors: "true"
+            02-nginx-user:
               command: "usermod -a -G ec2-user nginx"
+              ignoreErrors: "true"
+        config_https:
+          commands:
+            01-create-ssl-directory:
+              command: "mkdir /etc/nginx/ssl && chmod 700 /etc/nginx/ssl"
+            02-create-self-signed-certificate:
+              command: "SERVER_IP=$(curl https://checkip.amazonaws.com) && openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj /C=US/ST=Denial/L=Springfield/O=Dis/CN=$SERVER_IP -keyout domain.key -out domain.crt"
+              cwd: "/etc/nginx/ssl"
+              ignoreErrors: "true"
     Properties:
       ImageId: ami-0440d3b780d96b29d
       InstanceType: t3.micro
@@ -71,7 +84,7 @@ Resources:
             yum install -y aws-cfn-bootstrap
 
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource WebServerInstance --configsets setup --region ${AWS::Region}
-            
+
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WebServerInstance --region ${AWS::Region}
       Tags:
         - Key: Name
@@ -80,8 +93,12 @@ Resources:
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Enable HTTP access via port 80 and SSH
+      GroupDescription: Enable HTTP/HTTPS access and SSH
       SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80

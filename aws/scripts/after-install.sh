@@ -15,10 +15,8 @@ ALLOWED_HOSTS=${SERVER_IP}
 EOF
 
 
-# Install Requirements
+# Install requirements
 # --------------------------------------------------------------------------------
-
-python3.11 -m venv /home/ec2-user/project/.venv
 
 source /home/ec2-user/project/.venv/bin/activate
 
@@ -28,22 +26,18 @@ python3.11 -m pip install -r /home/ec2-user/project/requirements.txt
 # Configure static files
 # --------------------------------------------------------------------------------
 
-cd /home/ec2-user/project
-
-python3.11 manage.py collectstatic --clear --noinput
+python3.11 /home/ec2-user/project/manage.py collectstatic --clear --noinput
 
 
-# Configure Permissions
+# Configure permissions
 # --------------------------------------------------------------------------------
 
 chown -R ec2-user:ec2-user /home/ec2-user
 chmod -R 750 /home/ec2-user
 
 
-# Install and Configure Gunicorn
+# Configure gunicorn
 # --------------------------------------------------------------------------------
-
-python3.11 -m pip install gunicorn
 
 cat > /etc/systemd/system/gunicorn.socket <<EOF
 [Unit]
@@ -87,8 +81,19 @@ systemctl enable gunicorn.socket
 
 cat > /etc/nginx/conf.d/project.conf <<EOF
 server {
-    listen 80;
+    listen 80 default_server;
     server_name ${SERVER_IP};
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name ${SERVER_IP};
+
+    ssl_certificate /etc/nginx/ssl/domain.crt;
+    ssl_certificate_key /etc/nginx/ssl/domain.key;
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
 
     location = /favicon.ico { access_log off; log_not_found off; }
 
