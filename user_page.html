@@ -11,7 +11,7 @@
       <!--NAV BAR-->
       <nav>
         <a href="#" class="logo">
-          <img src = "Images/SSLOGOv2.png" alt = "Score Sensei Logo" height="85" width=425>
+          <img src = "Images/SSLOGOv3.png" alt = "Score Sensei Logo" height="85" width=425>
         </a>
         <!--Using unordered list for nav bar-->
         <!--Eventually we will have to fill hrefs with actual file paths to other pages-->
@@ -54,7 +54,9 @@
      <!--DISPLAY-->
      <div>
       <div class = "sheet-music-container">
-        <div id="osmdCanvas"/>
+        <script src="opensheetmusicdisplay.min.js"></script>
+        <div id="osmdCanvas">
+      </div>
         <script>
           var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
             autoResize: true,

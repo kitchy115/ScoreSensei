@@ -127,7 +127,7 @@ ul {
   padding: 10px; /* Example padding */
   background-color: #f9f9f9; /* Example background color */
   /* Add any other desired styles */
-  display: flex;
+  /*display: flex;*/
   justify-content: space-between;
   flex-direction: row;
   flex-wrap: wrap;
