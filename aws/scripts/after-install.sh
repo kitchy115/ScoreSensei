@@ -18,7 +18,7 @@ EOF
 # Install requirements
 # --------------------------------------------------------------------------------
 
-source /home/ec2-user/project/.venv/bin/activate
+source /home/ec2-user/venv/bin/activate
 
 python3.11 -m pip install -r /home/ec2-user/project/requirements.txt
 
@@ -61,7 +61,7 @@ After=network.target
 User=ec2-user
 Group=www
 WorkingDirectory=/home/ec2-user/project
-ExecStart=/home/ec2-user/project/.venv/bin/gunicorn \
+ExecStart=/home/ec2-user/venv/bin/gunicorn \
           --access-logfile - \
           --workers 3 \
           --bind unix:/run/gunicorn.sock \
