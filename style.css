@@ -122,6 +122,13 @@ ul {
   margin-right: 75px;
 }
 
+.sheet-music-container{
+  border: 2px solid #ccc; /* Example border style */
+  padding: 10px; /* Example padding */
+  background-color: #f9f9f9; /* Example background color */
+  /* Add any other desired styles */
+}
+
 /*-----------------------------------------------------Media Query for Responsive behavior of the Navbar-----------------------------------------------------*/
 @media only screen and (max-width: 600px) {
   .menu-icon {

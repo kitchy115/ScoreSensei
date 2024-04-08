@@ -52,9 +52,12 @@
      <!--SHEET MUSIC SETUP-->
 
      <!--DISPLAY-->
-
+     <div class="sheet-music-container">
+      <div id="osmdCanvas"></div>
+     </div>
+  
      <script src="opensheetmusicdisplay.min.js"></script>
-     <div id="osmdCanvas"/>
+     <div id="osmdCanvas">
      
      <script>
        var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay("osmdCanvas", {
@@ -76,7 +79,8 @@
            // window.scrollTo(0, document.body.scrollHeight);
          });
        }
-     </script>     
+     </script> 
+     </div>
 
      <!--MAKE BEGIN RECORDING BUTTON (center @ bottom)-->
      <div class = "bcenter">
