@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!--DASHBOARD (MUSIC XML FILES PAGE ON FIGMA)-->
+<h1 style = "font-size: 50px; font-family: Tech; color: white"> 'Username' files: </h1>
+
+
+<!--USER ENTRY SECTION-->
+<div>
+    <div class="user-section">
+        <div class="form-group" style="width: 200px;">
+          <input type="filename" name="filename" class="form-style" placeholder="Enter a file name" />
+        </div>
+</div>
+
+<div>
+    <a href="{% url 'main:showcase' %}" class="btn mt-4">BEGIN</a>
+</div>
+
+<!--HAVE EXISTING FILES DISPLAY HERE-->
+
+{% endblock %}
