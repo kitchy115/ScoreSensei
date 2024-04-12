@@ -2,34 +2,53 @@
 
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>SCORE SENSEI</title>
-        <link rel="stylesheet" href="{% static 'main/style.css' %}" />
-        <link rel="shortcut icon" type="image/jpg" href="{% static 'main/SSLOGOICON.png' %}"/>
-      </head>
-      <body style = "margin: 0;">
-        <!--NAVIGATION BAR-->
-        <nav>
-          <a href="{% url 'main:home' %}" class="logo">
-            <img src = "{% static 'main/SSLOGOv3.png' %}" alt = "Score Sensei Logo" height="85" width=425>
-          </a>
-          <!--Using unordered list for nav bar-->
-          <!--Eventually we will have to fill hrefs with actual file paths to other pages-->
-          <ul>
-            <li><a href="{% url 'main:home' %}" class="link">About Us</a></li>
-            <li><a href="{% url 'main:showcase' %}" class="link">Show Case</a></li>
-            <li><a href="https://github.com/kitchy115/CS-490-Capstone-Project" class="link">GitHub</a></li>
-            <li><a href="{% url 'main:login' %}" class="link">Login</a></li>
-          </ul>
-        </nav>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SCORE SENSEI</title>
+    <link rel="stylesheet" href="{% static 'main/style.css' %}" />
+    <link rel="shortcut icon" type="image/jpg" href="{% static 'main/SSLOGOICON.png' %}" />
+  </head>
+  <body style="margin: 0;">
+    <!-- NAVIGATION BAR -->
+    <nav>
+      <a href="{% url 'main:home' %}" class="logo"><img src="{% static 'main/SSLOGOv3.png' %}" alt="Score Sensei Logo" height="85" width="425" /></a>
+      <!-- Using unordered list for nav bar -->
+      <!-- Eventually we will have to fill hrefs with actual file paths to other pages -->
+      <ul>
+        <li>
+          <a href="{% url 'main:home' %}" class="link">About Us</a>
+        </li>
+        <li>
+          <a href="https://github.com/kitchy115/CS-490-Capstone-Project" class="link">GitHub</a>
+        </li>
 
-        {% block content %}
+        {% if user.is_authenticated %}
+          <li>
+            <a href="{% url 'accounts:logout' %}" class="link">Logout</a>
+          </li>
+        {% else %}
+          <li>
+            <a href="{% url 'accounts:login' %}" class="link">Login</a>
+          </li>
+        {% endif %}
 
-        {% endblock %}
+        <li>
+          <a href="{% url 'main:showcase' %}" class="link">Show Case</a>
+        </li>
+      </ul>
+    </nav>
 
-        </body>
-  </html>
-  
+    {% comment %}ALERTS{% endcomment %}
+    {% if messages %}
+      {% for message in messages %}
+        <h1>{{ message }}</h1>
+      {% endfor %}
+    {% endif %}
+
+    {% block content %}
+
+    {% endblock %}
+  </body>
+</html>
