@@ -2,7 +2,7 @@ from pygame import midi
 import keyboard
 import time
 
-template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n", 
+template1 = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n", 
             "<!DOCTYPE score-partwise PUBLIC\n", 
             "\"-//Recordare//DTD MusicXML 4.0 Partwise//EN\"\n",
             "\"http://www.musicxml.org/dtds/partwise.dtd\">\n", 
@@ -15,15 +15,9 @@ template = ["<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n",
             "<part id=\"P1\">\n",
             "<measure number=\"1\">\n",
             "<attributes>\n",
-            "<divisions>8</divisions>\n",
-            "<key>\n",
-            "<fifths>0</fifths>\n",
-            "</key>\n",
-            "<time>\n",
-            "<beats>4</beats>\n",
-            "<beat-type>4</beat-type>\n",
-            "</time>\n",
-            "<staves>2</staves>\n",
+            "<divisions>8</divisions>\n"]
+
+template2 = ["<staves>2</staves>\n",
             "<clef number=\"1\">\n",
             "<sign>G</sign>\n",
             "<line>2</line>\n",
@@ -179,6 +173,24 @@ def get_closest_note(duration):
     else:
         return 0
     
+def get_dynamic(velocity):
+    if velocity <= 29:
+        return "ppp"
+    elif velocity <= 39:
+        return "pp"
+    elif velocity <= 49:
+        return "p"
+    elif velocity <= 59:
+        return "mp"
+    elif velocity <= 69:
+        return "mf"
+    elif velocity <= 79:
+        return "f"
+    elif velocity <= 89:
+        return "ff"
+    elif 90 <= velocity:
+        return "fff"
+    
 def note_to_value(duration, dotted):
     result = n_to_v[duration]
     if dotted == True:
@@ -214,6 +226,34 @@ def write_forward(beat):
         file.write("<foward>\n")
         file.write(f"<duration>{beat}</duration>\n")
         file.write("</foward>\n")
+
+def write_time_sig(time_sig_beats):
+    with open("sheet.musicxml", "a") as file:
+        file.write("<time>\n")
+        file.write(f"<beats>{time_sig_beats}</beats>\n")
+        file.write("<beat-type>4</beat-type>\n")
+        file.write("</time>\n")
+
+def write_key(key):
+    with open("sheet.musicxml", "a") as file:
+        file.write("<key>\n")
+        file.write(f"<fifths>{key}</fifths>\n")
+        file.write("</key>\n")
+
+def generate_dynamic(dynamic, staff):
+    # Generate and append MusicXML note entry
+    with open("sheet.musicxml", "a") as file:
+        if staff == 1:
+            file.write("<direction placement=\"below\">\n")
+        else:
+            file.write("<direction placement=\"above\">\n")
+        file.write("<direction-type>\n")
+        file.write("<dynamics>\n")
+        file.write(f"<{dynamic}/>\n")
+        file.write("</dynamics>\n")
+        file.write("</direction-type>\n")
+        file.write(f"<staff>{staff}</staff>\n")
+        file.write("</direction>\n")
     
 def generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff):
     # Generate and append MusicXML note entry
@@ -563,22 +603,33 @@ def generate_rest(beat, measure, duration, dotted):
 
     return beat, measure
 
+# beginning of main
 note_start_times = {}
 beat = 0
 measure = 1
-previous_note = (None, None, None) # (start_time, duration)
+previous_note = (None, None, None) # (start_time, duration, start_beat)
 chord = False
 backup = False # flag for when a <backup> is used (needed to know when to place a <forward>)
 last_note_start_time = 0
 voice = 1
 measureless = True
+key = 0
+time_sig_beats = 4
+dynamic = None
+last_dynamic = None
 
 try:
     print('*** Ready to play ***')
     print('**Press [q] to quit**')
 
     with open("sheet.musicxml", "w") as file:
-        file.writelines(template)
+        file.writelines(template1)
+
+    write_key(key)
+    write_time_sig(time_sig_beats)
+    
+    with open("sheet.musicxml", "a") as file:
+        file.writelines(template2)
 
     last_note_end_time = 0 # when the last note ends
 
@@ -596,7 +647,8 @@ try:
                 if status == 144 and velocity > 0:  # key pressed
                     # starts at 0, then gets updated IN the loop
                     note_start_times[note] = (time.time(), beat) # record start time and amount of beats in measure (used by <backup>)
-                    print(f"Start time: {note_start_times[note][0]}, Start beat: {note_start_times[note][1]}")
+                    dynamic = get_dynamic(velocity)
+                    print(f"Start time: {note_start_times[note][0]}, Start beat: {note_start_times[note][1]}, Dynamic: {dynamic}, Velocity: {velocity}")
                     #rest is calculated by the current notes start time - the last notes end time
 
                     # prevent chords from cloning rests, might need to tweak -0.06
@@ -620,13 +672,14 @@ try:
                         
                         d = "{:.4f}".format(note_start_times[note][0] - last_note_end_time)
                         duration, dotted = get_note_duration(last_note_end_time, note_start_times[note][0])
-                        print(f"Rest Time: {duration}, Dotted:{dotted}, Exact Duration:{d} seconds")
+                        print(f"Rest Time: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds")
 
                         if duration != "unknown":
                             beat, measure = generate_rest(beat, measure, duration, dotted)
                             note_start_times[note] = (note_start_times[note][0], beat) # update starting beat for note
                             print(f"Updated start beat: {note_start_times[note][1]}")
-                        last_note_start_time = note_start_times[note][0] # record start time for next note  
+                    
+                    last_note_start_time = note_start_times[note][0] # record start time for next note
 
                 elif (status == 128) or (status == 144 and velocity == 0):  # key released
                     if note in note_start_times:
@@ -667,7 +720,7 @@ try:
                             chord = False
 
                         if beat != start_beat and backup != True:
-                            print(f"{beat} != {start_beat}, Writing backup:{beat - start_beat}")
+                            print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
                             write_backup(beat - start_beat)
                             beat = start_beat
                             backup = True
@@ -675,10 +728,14 @@ try:
                         
                         previous_note = (start_time, duration, dotted) # record for next note
 
-                        print (f"Note:{note_name}, Octave:{octave}, Duration:{duration}, Dotted:{dotted}, Exact Duration:{d} seconds, Chord:{chord}")
+                        print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {chord}")
                         last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
 
                         if duration != "unknown":
+                            if last_dynamic != dynamic:
+                                generate_dynamic(dynamic, staff)
+                                last_dynamic = dynamic
+
                             beat, measure = generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff)
                             print(f"beat: {beat} measure: {measure}")
                         
@@ -689,3 +746,4 @@ finally:
     # write template_ending 
     with open("sheet.musicxml", "a") as file:
         file.writelines(template_ending)
+# end of main
