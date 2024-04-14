@@ -40,21 +40,8 @@ n_to_v = {"quarter": 8,
           "whole": 32,
           "eighth": 4,
           "16th": 2,
-          "32nd": 1}
-
-value_to_note = {8: "quarter",
-                 16: "half",
-                 32: "whole",
-                 4: "eighth",
-                 2: "16th",
-                 1: "32nd"}
-
-v_to_n = {8: "quarter",
-          16: "half",
-          32: "whole",
-          4: "eighth",
-          2: "16th",
-          1: "32nd"}
+          "32nd": 1,
+          "unknown": 0}
 
 midi.init()
 
@@ -112,66 +99,32 @@ def get_note_duration(start_time, end_time):
     else:
         return "unknown", False
 
-# only works in 4/4
-def calc_dotted(duration):
-    if duration - 32 > 0: # dotted whole
-        return 32
-    elif duration - 16 > 0: # dotted half
-        return 16
-    elif duration - 8 > 0: # dotted quarter
-        return 8
-    elif duration - 4 > 0: # dotted eighth
-        return 4
-    elif duration - 2 > 0: # dotted 16th
-        return 2
-    elif duration - 1 > 0: # dotted 32nd
-        return 1
+# only used for tying notes between measures
+def get_closest_note(leftover):
+    if leftover >= 32:
+        return "whole", False
+    elif leftover >= (16 + 8):
+        return "half", True
+    elif leftover >= 16:
+        return "half", False
+    elif leftover >= (8 + 4):
+        return "quarter", True
+    elif leftover >= 8:
+        return "quarter", False
+    elif leftover >= (4 + 2):
+        return "eighth", True
+    elif leftover >= 4:
+        return "eighth", False
+    elif leftover >= (2 + 1):
+        return "16th", True
+    elif leftover >= 2:
+        return "16th", False
+    elif leftover >= (1 + 0.5):
+        return "32nd", True
+    elif leftover >= 1:
+        return "32nd", False
     else:
-        return 0
-    
-def check_dotted(duration):
-    if duration == 48: # dotted whole
-        return 32
-    elif duration == 24: # dotted half
-        return 16
-    elif duration == 12: # dotted quarter
-        return 8
-    elif duration == 6: # dotted eighth
-        return 4
-    elif duration == 3: # dotted 16th
-        return 2
-    elif duration == 1.5: # dotted 32nd
-        return 1
-    else:
-        return 0
-    
-def get_closest_note(duration):
-    if duration - 48 > 0: # dotted whole
-        return 48
-    elif duration - 32 > 0: # whole
-        return 32
-    elif duration - 24 > 0:
-        return 24
-    elif duration - 16 > 0:
-        return 16
-    elif duration - 12 > 0:
-        return 12
-    elif duration - 8 > 0:
-        return 8
-    elif duration - 6 > 0:
-        return 6
-    elif duration - 4 > 0:
-        return 4
-    elif duration - 3 > 0:
-        return 3
-    elif duration - 2 > 0:
-        return 2
-    elif duration - 1.5 > 0:
-        return 1.5
-    elif duration - 1 > 0:
-        return 1
-    else:
-        return 0
+        return "unknown", False
     
 def get_dynamic(velocity):
     if velocity <= 29:
@@ -255,28 +208,109 @@ def generate_dynamic(dynamic, staff):
         file.write(f"<staff>{staff}</staff>\n")
         file.write("</direction>\n")
     
-def generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff):
+def generate_note(beat, create_measure, duration, note_name, octave, chord, voice, dotted, staff, time_sig_beats, l1_note_buffer, l2_note_buffer, tied):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
-        file.write("<note>\n")
-        if chord == True:
-            file.write("<chord/>\n")
-        file.write("<pitch>\n")
-        file.write(f"<step>{note_name}</step>\n")
-        if "#" in note_name:
-            file.write("<alter>1</alter>\n")
-        file.write(f"<octave>{octave}</octave>\n")
-        file.write("</pitch>\n")
-        file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
-        file.write(f"<voice>{voice}</voice>\n")
-        file.write(f"<type>{duration}</type>\n")
-        if dotted == True:
-            file.write(f"<dot/>\n")
-        file.write(f"<staff>{staff}</staff>\n")
-        file.write("</note>\n")
-        beat += note_to_value(duration, dotted)
+        next_tied = tied
+        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # create new measure
+            create_measure = True
+            next_tied = True
+            # write left over tied notes to note_buffer
+            leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
+            duration, dotted = get_closest_note(time_sig_beats * 8 - beat)
+            if leftover != 0:
+                # calc first note
+                l1_duration, l1_dotted = get_closest_note(leftover)
+                leftover = leftover - note_to_value(l1_duration, l1_dotted)
+                l2 = False
+                if leftover != 0:
+                    # calc second note
+                    l2 = True
+                    l2_duration, l2_dotted = get_closest_note(leftover)
 
-    return beat, measure
+                # write l1 to buffer
+                l1_note_buffer.append("<note>\n")
+                if chord == True:
+                    l1_note_buffer.append("<chord/>\n")
+                l1_note_buffer.append("<pitch>\n")
+                l1_note_buffer.append(f"<step>{note_name}</step>\n")
+                if "#" in note_name:
+                    l1_note_buffer.append("<alter>1</alter>\n")
+                l1_note_buffer.append(f"<octave>{octave}</octave>\n")
+                l1_note_buffer.append("</pitch>\n")
+                l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
+                l1_note_buffer.append(f"<voice>{voice}</voice>\n")
+                l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
+                if l1_dotted == True:
+                    l1_note_buffer.append(f"<dot/>\n")
+                l1_note_buffer.append(f"<staff>{staff}</staff>\n")
+                l1_note_buffer.append("<notations>\n")
+                #if l2 == True:
+                l1_note_buffer.append("<tied type=\"stop\"/>\n")
+                l1_note_buffer.append("<tied type=\"start\"/>\n")
+                #else:
+                    #l1_note_buffer.append("<tied type=\"stop\"/>\n")
+                l1_note_buffer.append("</notations>\n")
+                l1_note_buffer.append("</note>\n")
+
+                if l2 == True:
+                    # write l2 to buffer
+                    l2_note_buffer.append("<note>\n")
+                    if chord == True:
+                        l2_note_buffer.append("<chord/>\n")
+                    l2_note_buffer.append("<pitch>\n")
+                    l2_note_buffer.append(f"<step>{note_name}</step>\n")
+                    if "#" in note_name:
+                        l2_note_buffer.append("<alter>1</alter>\n")
+                    l2_note_buffer.append(f"<octave>{octave}</octave>\n")
+                    l2_note_buffer.append("</pitch>\n")
+                    l2_note_buffer.append(f"<duration>{note_to_value(l2_duration, l2_dotted)}</duration>\n")
+                    l2_note_buffer.append(f"<voice>{voice}</voice>\n")
+                    l2_note_buffer.append(f"<type>{l2_duration}</type>\n")
+                    if l2_dotted == True:
+                        l2_note_buffer.append(f"<dot/>\n")
+                    l2_note_buffer.append(f"<staff>{staff}</staff>\n")
+                    l2_note_buffer.append("<notations>\n")
+                    l2_note_buffer.append("<tied type=\"stop\"/>\n")
+                    l2_note_buffer.append("<tied type=\"start\"/>\n")
+                    l2_note_buffer.append("</notations>\n")
+                    l2_note_buffer.append("</note>\n")
+
+        # write the note
+        if duration != "unknown":
+            file.write("<note>\n")
+            if chord == True:
+                file.write("<chord/>\n")
+            file.write("<pitch>\n")
+            file.write(f"<step>{note_name}</step>\n")
+            if "#" in note_name:
+                file.write("<alter>1</alter>\n")
+            file.write(f"<octave>{octave}</octave>\n")
+            file.write("</pitch>\n")
+            file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
+            file.write(f"<voice>{voice}</voice>\n")
+            file.write(f"<type>{duration}</type>\n")
+            if dotted == True:
+                file.write(f"<dot/>\n")
+            file.write(f"<staff>{staff}</staff>\n")
+            if create_measure == True and tied == False:
+                file.write("<notations>\n")
+                file.write("<tied type=\"start\"/>\n")
+                file.write("</notations>\n")
+            elif create_measure == False and tied == True:
+                file.write("<notations>\n")
+                file.write("<tied type=\"stop\"/>\n")
+                file.write("</notations>\n")
+            elif create_measure == True and tied == True:
+                file.write("<notations>\n")
+                file.write("<tied type=\"stop\"/>\n")
+                file.write("<tied type=\"start\"/>\n")
+                file.write("</notations>\n")
+            file.write("</note>\n")
+            if create_measure == False:
+                beat += note_to_value(duration, dotted)
+
+    return beat, create_measure, l1_note_buffer, l2_note_buffer, next_tied
 
 def generate_rest(beat, measure, duration, dotted):
     # Generate and append MusicXML note entry
@@ -296,6 +330,7 @@ def generate_rest(beat, measure, duration, dotted):
 # main(midi_note, file_name)
 def main():
     note_start_times = {}
+    buffer_note_start_times = {}
     beat = 0
     measure = 1
     previous_note = (None, None, None) # (start_time, duration, start_beat)
@@ -307,6 +342,9 @@ def main():
     time_sig_beats = 4
     dynamic = None
     last_dynamic = None
+    create_measure = False
+    l1_note_buffer = []
+    l2_note_buffer = []
 
     try:
         print('*** Ready to play ***')
@@ -336,7 +374,7 @@ def main():
 
                     if status == 144 and velocity > 0:  # key pressed
                         # starts at 0, then gets updated IN the loop
-                        note_start_times[note] = (time.time(), beat) # record start time and amount of beats in measure (used by <backup>)
+                        note_start_times[note] = (time.time(), beat, False) # record start time and amount of beats in measure (used by <backup>)
                         dynamic = get_dynamic(velocity)
                         print(f"Start time: {note_start_times[note][0]}, Start beat: {note_start_times[note][1]}, Dynamic: {dynamic}, Velocity: {velocity}")
                         #rest is calculated by the current notes start time - the last notes end time
@@ -361,14 +399,21 @@ def main():
 
                             if duration != "unknown":
                                 beat, measure = generate_rest(beat, measure, duration, dotted)
-                                note_start_times[note] = (note_start_times[note][0], beat) # update starting beat for note
+                                # TODO fix conflict when rest is bigger than amount remaining in measure
+                                if beat >= time_sig_beats * 8: # create new measure
+                                    measure += 1
+                                    with open("sheet.musicxml", "a") as file:
+                                        file.write("</measure>\n")
+                                        file.write(f"<measure number=\"{measure}\">\n")
+                                    beat = 0
+                                note_start_times[note] = (note_start_times[note][0], beat, False) # update starting beat for note
                                 print(f"Updated start beat: {note_start_times[note][1]}")
                         
                         last_note_start_time = note_start_times[note][0] # record start time for next note
 
                     elif (status == 128) or (status == 144 and velocity == 0):  # key released
                         if note in note_start_times:
-                            start_time, start_beat = note_start_times.pop(note, None)
+                            start_time, start_beat, tied = note_start_times.pop(note, None)
                             end_time = time.time()
                             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
                             duration, dotted = get_note_duration(start_time, end_time)
@@ -379,7 +424,8 @@ def main():
                             if (previous_note[0] != None and previous_note[0] - start_time > -0.06
                                 and previous_note[1] == duration and previous_note[2] == dotted
                                 and duration != "unknown"):
-                                beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
+                                if create_measure == False:
+                                    beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
                                 if beat < 0:
                                     beat = 0
                                 chord = True
@@ -403,8 +449,74 @@ def main():
                                     generate_dynamic(dynamic, staff)
                                     last_dynamic = dynamic
 
-                                beat, measure = generate_note(beat, measure, duration, note_name, octave, chord, voice, dotted, staff)
+                                beat, create_measure, l1_note_buffer, l2_note_buffer, tied = generate_note(beat, create_measure, duration, note_name, octave, chord, voice, dotted, staff, time_sig_beats, l1_note_buffer, l2_note_buffer, tied)
                                 print(f"beat: {beat} measure: {measure}")
+                            
+                            if create_measure == True:
+                                new_beat = 0
+                                for note in note_start_times:
+                                    # TODO generate voices for every non-chord note
+                                    start_time, start_beat, tied = note_start_times[note]
+                                    end_time = time.time()
+                                    d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
+                                    duration, dotted = get_note_duration(start_time, end_time)
+                                    note_name = get_note(note)
+                                    octave = get_octave(note)
+                                    staff = get_staff(note_name, octave)
+
+                                    if (previous_note[0] != None and previous_note[0] - start_time > -0.06
+                                        and previous_note[1] == duration and previous_note[2] == dotted
+                                        and duration != "unknown"):
+                                        chord = True
+                                    else:
+                                        chord = False
+
+                                    if beat != start_beat and backup != True:
+                                        print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
+                                        write_backup(beat - start_beat)
+                                        beat = start_beat
+                                        backup = True
+                                        voice = 2
+                                    
+                                    previous_note = (start_time, duration, dotted) # record for next note
+
+                                    print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {chord}")
+                                    last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
+
+                                    if duration != "unknown":
+                                        if last_dynamic != dynamic and backup == False:
+                                            generate_dynamic(dynamic, staff)
+                                            last_dynamic = dynamic
+
+                                        beat, create_measure, l1_note_buffer, l2_note_buffer, tied = generate_note(beat, create_measure, duration, note_name, octave, chord, voice, dotted, staff, time_sig_beats, l1_note_buffer, l2_note_buffer, tied)
+                                        print(f"beat: {beat} measure: {measure}")
+
+                                    # push copy of note back onto note_start_times
+                                    leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
+                                    if leftover > new_beat:
+                                        new_beat = leftover
+                                    buffer_note_start_times[note] = (time.time(), leftover, tied) # TODO add way to continue/stop tie
+                                # end of for each loop
+
+                                if backup == True:
+                                    backup = False
+                                    voice = 1
+                                if chord == True:
+                                    chord = False
+                                
+                                # write the new measure
+                                measure += 1
+                                with open("sheet.musicxml", "a") as file:
+                                    file.write("</measure>\n")
+                                    file.write(f"<measure number=\"{measure}\">\n")
+                                    file.writelines(l1_note_buffer)
+                                    file.writelines(l2_note_buffer)
+                                create_measure = False
+                                beat = new_beat
+                                l1_note_buffer = [] # clear buffer
+                                l2_note_buffer = [] # clear buffer
+                                note_start_times = buffer_note_start_times
+                                buffer_note_start_times = {} # clear buffer dict
 
     finally:
         # Close the midi interface
@@ -415,5 +527,4 @@ def main():
             file.writelines(template_ending)
 
 # first line of code
-# call main
-main()
+main() # call main
