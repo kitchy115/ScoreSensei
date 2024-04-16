@@ -212,7 +212,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         next_tied = tied
-        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # create new measure
+        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8 and chord == False: # create new measure
             create_measure = True
             next_tied = True
             # write leftover tied notes to note_buffer
@@ -304,7 +304,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                 file.write("<tied type=\"start\"/>\n")
                 file.write("</notations>\n")
             file.write("</note>\n")
-            if create_measure == False:
+            if create_measure == False and chord == False:
                 beat += note_to_value(duration, dotted)
 
     return beat, create_measure, l1_note_buffer, l2_note_buffer, next_tied
@@ -312,7 +312,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
 def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_note_buffer, l2_note_buffer):
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
-        # TODO add staff support and handle creating new measures
+        # TODO add staff support and <forward>
         if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # create new measure
             create_measure = True
             # write leftover tied notes to note_buffer
@@ -419,6 +419,7 @@ def main():
                                 voice = 1
                             if chord == True:
                                 chord = False
+                                # beat = beat + note_to_value(previous_note[1], previous_note[2]) # add removed beat back
 
                             # use the more recent number to generate a rest
                             if last_note_start_time < last_note_end_time:
@@ -432,17 +433,7 @@ def main():
 
                             if duration != "unknown":
                                 beat, create_measure, l1_note_buffer, l2_note_buffer = generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_note_buffer, l2_note_buffer)
-                                # TODO test generate_rest, then...
-                                # remove below
-                                '''
-                                if beat >= time_sig_beats * 8: # create new measure
-                                    measure += 1
-                                    with open("sheet.musicxml", "a") as file:
-                                        file.write("</measure>\n")
-                                        file.write(f"<measure number=\"{measure}\">\n")
-                                    beat = 0
-                                '''
-                                # remove above
+                                
                                 note_start_times[note] = (note_start_times[note][0], beat, False) # update starting beat for note
                                 print(f"Updated start beat: {note_start_times[note][1]}")
                         
@@ -461,15 +452,17 @@ def main():
                             if (previous_note[0] != None and previous_note[0] - start_time > -0.06
                                 and previous_note[1] == duration and previous_note[2] == dotted
                                 and duration != "unknown"):
-                                if create_measure == False:
-                                    beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
-                                if beat < 0:
-                                    beat = 0
+                                # TODO test then remove below
+                                # if create_measure == False:
+                                    # beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
+                                # if beat < 0:
+                                    # beat = 0
+                                # remove above
                                 chord = True
                             else:
                                 chord = False
 
-                            if beat != start_beat and backup != True:
+                            if beat != start_beat and backup != True and duration != "unknown" and chord == False:
                                 print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
                                 write_backup(beat - start_beat)
                                 beat = start_beat
@@ -493,6 +486,7 @@ def main():
                         new_beat = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat) # record leftover from first note
                         for note in note_start_times:
                             # TODO generate voices for every non-chord note
+                            # TODO thoroughly test
                             start_time, start_beat, tied = note_start_times[note]
                             end_time = time.time()
                             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
@@ -508,9 +502,10 @@ def main():
                             else:
                                 chord = False
 
-                            if beat != start_beat and backup != True:
-                                print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
-                                write_backup(beat - start_beat)
+                            if beat != start_beat and backup != True and duration != "unknown" and chord == False:
+                                # end of measure, can assume beat is max
+                                print(f"{time_sig_beats * 8} != {start_beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
+                                write_backup(time_sig_beats * 8 - start_beat)
                                 beat = start_beat
                                 backup = True
                                 voice = 2
@@ -530,9 +525,14 @@ def main():
 
                             # push copy of note back onto note_start_times
                             leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
+                            if leftover < 0: # when note duration is 0
+                                leftover = 0
                             if leftover > new_beat:
                                 new_beat = leftover
-                            buffer_note_start_times[note] = (time.time(), leftover, tied)
+                            if duration != "unknown":
+                                buffer_note_start_times[note] = (time.time(), leftover, tied)
+                            else:
+                                buffer_note_start_times[note] = (time.time(), new_beat, tied)
                         # end of for each loop
 
                         if backup == True:
