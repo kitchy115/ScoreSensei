@@ -133,6 +133,47 @@ ul {
   flex-wrap: wrap;
 }
 
+/* Time Signature */
+.cust-select{
+  position: relative;
+  font-family: tech;
+}
+
+
+/*
+.form-group{ 
+  position: relative;
+  display: block;
+    margin: 0;
+    padding: 0;
+}
+.form-style {
+  padding: 13px 20px;
+  padding-left: 55px;
+  height: 48px;
+  width: 100%;
+  font-weight: 500;
+  font-family: Tech;
+  border-radius: 4px;
+  font-size: 14px;
+  line-height: 22px;
+  letter-spacing: 0.5px;
+  outline: none;
+  color: black;
+  background-color: white;
+  border: none;
+  -webkit-transition: all 200ms linear;
+  transition: all 200ms linear;
+  box-shadow: 0 4px 8px 0 rgba(21,21,21,.2);
+}
+.form-style:focus,
+.form-style:active {
+  border: none;
+  outline: none;
+  box-shadow: 0 4px 8px 0 rgba(21,21,21,.2);
+}
+*/
+
 /*-----------------------------------------------------Media Query for Responsive behavior of the Navbar-----------------------------------------------------*/
 @media only screen and (max-width: 600px) {
   .menu-icon {
