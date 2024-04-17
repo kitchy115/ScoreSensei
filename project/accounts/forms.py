@@ -28,6 +28,22 @@ class RegistrationForm(UserCreationForm):
             }
         )
 
+        """
+        self.fields["filename"].widget.attrs.update(
+            {
+                "type": "filename",
+                "class": "form-style",
+                "placeholder": "Enter a filename",
+            }
+        )
+        """
+
     class Meta:
         model = User
         fields = ["username", "password1", "password2"]
+
+
+"""
+class FileCreation(FileCreationForm):
+
+"""
