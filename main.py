@@ -411,6 +411,22 @@ def main():
                     data, timestamp = event[0], event[1]
                     status, note, velocity, _ = data
 
+                    if 176 <= status <= 191 and note == 64: # pedal events
+                        if velocity >= 64: # pedal pressed
+                            with open("sheet.musicxml", "a") as file:
+                                file.write(f"<direction placement=\"below\">\n")
+                                file.write(f"<direction-type>\n")
+                                file.write(f"<pedal type=\"start\" line=\"yes\"/>\n")
+                                file.write(f"</direction-type>\n")
+                                file.write(f"</direction>\n")
+                        elif velocity < 64: # pedal released
+                            with open("sheet.musicxml", "a") as file:
+                                file.write(f"<direction placement=\"below\">\n")
+                                file.write(f"<direction-type>\n")
+                                file.write(f"<pedal type=\"stop\" line=\"yes\"/>\n")
+                                file.write(f"</direction-type>\n")
+                                file.write(f"</direction>\n")
+
                     if status == 144 and velocity > 0:  # key pressed
                         # starts at 0, then gets updated IN the loop
                         note_start_times[note] = (time.time(), beat, False) # record start time and amount of beats in measure (used by <backup>)
