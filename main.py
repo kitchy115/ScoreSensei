@@ -66,6 +66,9 @@ THIRTY_SECOND_DURATION = QUARTER_DURATION / 8
 
 def get_note(note_number):
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    #if len(note_names[note_number % 12]) > 1:
+        # note is altered
+        # check
     return note_names[note_number % 12]
 
 def get_octave(note_number):
@@ -238,7 +241,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     if chord == True:
                         l1_note_buffer.append("<chord/>\n")
                     l1_note_buffer.append("<pitch>\n")
-                    l1_note_buffer.append(f"<step>{note_name}</step>\n")
+                    l1_note_buffer.append(f"<step>{note_name[0]}</step>\n")
                     if "#" in note_name:
                         l1_note_buffer.append("<alter>1</alter>\n")
                     l1_note_buffer.append(f"<octave>{octave}</octave>\n")
@@ -261,7 +264,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     if chord == True:
                         l2_note_buffer.append("<chord/>\n")
                     l2_note_buffer.append("<pitch>\n")
-                    l2_note_buffer.append(f"<step>{note_name}</step>\n")
+                    l2_note_buffer.append(f"<step>{note_name[0]}</step>\n")
                     if "#" in note_name:
                         l2_note_buffer.append("<alter>1</alter>\n")
                     l2_note_buffer.append(f"<octave>{octave}</octave>\n")
@@ -284,7 +287,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
             if chord == True:
                 file.write("<chord/>\n")
             file.write("<pitch>\n")
-            file.write(f"<step>{note_name}</step>\n")
+            file.write(f"<step>{note_name[0]}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
