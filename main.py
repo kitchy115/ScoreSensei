@@ -74,6 +74,7 @@ def get_octave(note_number):
 def get_note_duration(start_time, end_time):
     duration = end_time - start_time
 
+    # TODO fix conflicts when duration > whole
     if abs(WHOLE_DURATION - (WHOLE_DURATION - (HALF_DURATION + QUARTER_DURATION)) / 2 < duration):
         return "whole", False
     elif abs((HALF_DURATION + QUARTER_DURATION) - ((HALF_DURATION + QUARTER_DURATION) - HALF_DURATION) / 2 < duration):
@@ -92,8 +93,10 @@ def get_note_duration(start_time, end_time):
         return "16th", True
     elif abs(SIXTEENTH_DURATION - (SIXTEENTH_DURATION - (THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2)) / 2 < duration):
         return "16th", False
-    elif abs((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - ((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - THIRTY_SECOND_DURATION) / 2 < duration):
-        return "32nd", True
+    # remove below
+    # elif abs((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - ((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - THIRTY_SECOND_DURATION) / 2 < duration):
+        # return "32nd", True
+    # remove above
     elif abs(THIRTY_SECOND_DURATION < duration):
         return "32nd", False
     else:
@@ -212,7 +215,8 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         next_tied = tied
-        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8 and chord == False: # create new measure
+        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # and chord == False:
+            # create new measure
             create_measure = True
             next_tied = True
             # write leftover tied notes to note_buffer
@@ -228,29 +232,30 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     l2 = True
                     l2_duration, l2_dotted = get_closest_note(leftover)
 
-                # write l1 to buffer
-                l1_note_buffer.append("<note>\n")
-                if chord == True:
-                    l1_note_buffer.append("<chord/>\n")
-                l1_note_buffer.append("<pitch>\n")
-                l1_note_buffer.append(f"<step>{note_name}</step>\n")
-                if "#" in note_name:
-                    l1_note_buffer.append("<alter>1</alter>\n")
-                l1_note_buffer.append(f"<octave>{octave}</octave>\n")
-                l1_note_buffer.append("</pitch>\n")
-                l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
-                l1_note_buffer.append(f"<voice>{voice}</voice>\n")
-                l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
-                if l1_dotted == True:
-                    l1_note_buffer.append(f"<dot/>\n")
-                l1_note_buffer.append(f"<staff>{staff}</staff>\n")
-                l1_note_buffer.append("<notations>\n")
-                l1_note_buffer.append("<tied type=\"stop\"/>\n")
-                l1_note_buffer.append("<tied type=\"start\"/>\n")
-                l1_note_buffer.append("</notations>\n")
-                l1_note_buffer.append("</note>\n")
+                if l1_duration != "unknown":
+                    # write l1 to buffer
+                    l1_note_buffer.append("<note>\n")
+                    if chord == True:
+                        l1_note_buffer.append("<chord/>\n")
+                    l1_note_buffer.append("<pitch>\n")
+                    l1_note_buffer.append(f"<step>{note_name}</step>\n")
+                    if "#" in note_name:
+                        l1_note_buffer.append("<alter>1</alter>\n")
+                    l1_note_buffer.append(f"<octave>{octave}</octave>\n")
+                    l1_note_buffer.append("</pitch>\n")
+                    l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
+                    l1_note_buffer.append(f"<voice>{voice}</voice>\n")
+                    l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
+                    if l1_dotted == True:
+                        l1_note_buffer.append(f"<dot/>\n")
+                    l1_note_buffer.append(f"<staff>{staff}</staff>\n")
+                    l1_note_buffer.append("<notations>\n")
+                    l1_note_buffer.append("<tied type=\"stop\"/>\n")
+                    l1_note_buffer.append("<tied type=\"start\"/>\n")
+                    l1_note_buffer.append("</notations>\n")
+                    l1_note_buffer.append("</note>\n")
 
-                if l2 == True:
+                if l2 == True and l2_duration != "unknown":
                     # write l2 to buffer
                     l2_note_buffer.append("<note>\n")
                     if chord == True:
@@ -328,16 +333,17 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
                     l2 = True
                     l2_duration, l2_dotted = get_closest_note(leftover)
                 
-                # write l1 to buffer
-                l1_note_buffer.append("<note>\n")
-                l1_note_buffer.append("<rest/>\n")
-                l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
-                l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
-                if dotted == True:
-                    l1_note_buffer.append(f"<dot/>\n")
-                l1_note_buffer.append("</note>\n")
+                if l1_duration != "unknown":
+                    # write l1 to buffer
+                    l1_note_buffer.append("<note>\n")
+                    l1_note_buffer.append("<rest/>\n")
+                    l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
+                    l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
+                    if dotted == True:
+                        l1_note_buffer.append(f"<dot/>\n")
+                    l1_note_buffer.append("</note>\n")
 
-                if l2 == True:
+                if l2 == True and l2_duration != "unknown":
                     # write l2 to buffer
                     l2_note_buffer.append("<note>\n")
                     l2_note_buffer.append("<rest/>\n")
@@ -419,7 +425,6 @@ def main():
                                 voice = 1
                             if chord == True:
                                 chord = False
-                                # beat = beat + note_to_value(previous_note[1], previous_note[2]) # add removed beat back
 
                             # use the more recent number to generate a rest
                             if last_note_start_time < last_note_end_time:
@@ -452,12 +457,6 @@ def main():
                             if (previous_note[0] != None and previous_note[0] - start_time > -0.06
                                 and previous_note[1] == duration and previous_note[2] == dotted
                                 and duration != "unknown"):
-                                # TODO test then remove below
-                                # if create_measure == False:
-                                    # beat = beat - note_to_value(duration, dotted) # remove added beat from first note in chord
-                                # if beat < 0:
-                                    # beat = 0
-                                # remove above
                                 chord = True
                             else:
                                 chord = False
@@ -485,7 +484,7 @@ def main():
                     if create_measure == True:
                         new_beat = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat) # record leftover from first note
                         for note in note_start_times:
-                            # TODO generate voices for every non-chord note
+                            # TODO generate unique voices for each non-chord note
                             # TODO thoroughly test
                             start_time, start_beat, tied = note_start_times[note]
                             end_time = time.time()
