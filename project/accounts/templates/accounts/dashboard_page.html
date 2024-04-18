@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!--DASHBOARD (MUSIC XML FILES PAGE ON FIGMA)-->
+<h1 style = "font-size: 50px; font-family: Tech; color: white"> {{ username }} files: </h1>
+
+
+<!--USER ENTRY SECTION-->
+<div>
+    <div class="user-section">
+        <div class="form-group" style="width: 200px;">
+          <form action="{% url 'scores:create_score' %}" method="POST">
+            {% csrf_token %}
+            <div class="form-group mt-2" style="width: 275px;">
+              <input type="filename" name="filename" class="form-style" placeholder="Enter a file name" />
+              <button type="submit" class="btn mt-4" name="submit">Create Score</button>
+            </div>
+          </form>
+        </div>
+</div>
+
+<div>
+    <a href="{% url 'scores:read_score' slug='example' %}" class="btn mt-4">BEGIN</a>
+</div>
+
+<!--HAVE EXISTING FILES DISPLAY HERE-->
+
+{% endblock %}

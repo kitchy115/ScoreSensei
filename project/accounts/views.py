@@ -1,5 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 from django.shortcuts import redirect, render
 
 from .forms import RegistrationForm
@@ -45,3 +47,11 @@ def user_logout(request):
     logout(request)
     messages.success(request, "You were logged out")
     return redirect("main:home")
+
+
+@login_required(redirect_field_name=None)
+def dashboard(request, username):
+    if username != request.user.username:
+        raise Http404
+
+    return render(request, "accounts/dashboard_page.html", {"username": username})

@@ -26,6 +26,12 @@
 
         {% if user.is_authenticated %}
           <li>
+            <a href="{% url 'accounts:dashboard' username=user.username %}" class="link">My Scores</a>
+          </li>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+          <li>
             <a href="{% url 'accounts:logout' %}" class="link">Logout</a>
           </li>
         {% else %}
@@ -33,10 +39,6 @@
             <a href="{% url 'accounts:login' %}" class="link">Login</a>
           </li>
         {% endif %}
-
-        <li>
-          <a href="{% url 'main:showcase' %}" class="link">Show Case</a>
-        </li>
       </ul>
     </nav>
 

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "main",
     "accounts",
+    "scores",
 ]
 
 MIDDLEWARE = [
@@ -73,6 +74,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "scoresensei.wsgi.application"
 
+AUTH_USER_MODEL = "auth.User"
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
