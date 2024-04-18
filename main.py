@@ -64,11 +64,9 @@ EIGHTH_DURATION = QUARTER_DURATION / 2
 SIXTEENTH_DURATION = QUARTER_DURATION / 4
 THIRTY_SECOND_DURATION = QUARTER_DURATION / 8
 
-def get_note(note_number):
-    note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    #if len(note_names[note_number % 12]) > 1:
-        # note is altered
-        # check
+# seems useless as a function now
+def get_note(note_number, note_names):
+    # note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     return note_names[note_number % 12]
 
 def get_octave(note_number):
@@ -157,22 +155,28 @@ def note_to_value(duration, dotted):
     return result
 
 def get_staff(note, octave):
-    if octave > 4: # greater than C4
-        return 1
-    
-    if octave == 4:
-        match note:
-            case "A":
-                return 2 # less than C4
-            case "A#":
-                return 2 # less than C4
-            case "B":
-                return 2 # less than C4
-            case "B#":
-                return 2 # less than C4
-            case _:
-                return 1 # C4 or greater
-    return 2 # less than C4
+    if octave < 4: # less than C4
+        return 2
+    else:
+        return 1 # C4 or greater
+
+def get_note_names(key):
+    # TODO test
+    note_names = {-6: ["Cb", "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb"],
+                  -5: ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+                  -4: ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+                  -3: ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+                  -2: ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+                  -1: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+                  0: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+                  1: ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+                  2: ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+                  3: ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+                  4: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+                  5: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+                  6: ["C", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B"]}
+
+    return note_names[key]
 
 def write_backup(beat):
     with open("sheet.musicxml", "a") as file:
@@ -244,6 +248,8 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     l1_note_buffer.append(f"<step>{note_name[0]}</step>\n")
                     if "#" in note_name:
                         l1_note_buffer.append("<alter>1</alter>\n")
+                    elif "b" in note_name:
+                        l1_note_buffer.append("<alter>-1</alter>\n")
                     l1_note_buffer.append(f"<octave>{octave}</octave>\n")
                     l1_note_buffer.append("</pitch>\n")
                     l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
@@ -267,6 +273,8 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     l2_note_buffer.append(f"<step>{note_name[0]}</step>\n")
                     if "#" in note_name:
                         l2_note_buffer.append("<alter>1</alter>\n")
+                    elif "b" in note_name:
+                        l2_note_buffer.append("<alter>-1</alter>\n")
                     l2_note_buffer.append(f"<octave>{octave}</octave>\n")
                     l2_note_buffer.append("</pitch>\n")
                     l2_note_buffer.append(f"<duration>{note_to_value(l2_duration, l2_dotted)}</duration>\n")
@@ -290,6 +298,8 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
             file.write(f"<step>{note_name[0]}</step>\n")
             if "#" in note_name:
                 file.write("<alter>1</alter>\n")
+            elif "b" in note_name:
+                file.write("<alter>-1</alter>\n")
             file.write(f"<octave>{octave}</octave>\n")
             file.write("</pitch>\n")
             file.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
@@ -401,6 +411,8 @@ def main():
         with open("sheet.musicxml", "a") as file:
             file.writelines(template2)
 
+        note_names = get_note_names(key)
+
         last_note_end_time = 0 # when the last note ends
 
         while not keyboard.is_pressed('`'):
@@ -469,7 +481,7 @@ def main():
                             end_time = time.time()
                             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
                             duration, dotted = get_note_duration(start_time, end_time)
-                            note_name = get_note(note)
+                            note_name = get_note(note, note_names)
                             octave = get_octave(note)
                             staff = get_staff(note_name, octave)
 
@@ -509,7 +521,7 @@ def main():
                             end_time = time.time()
                             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
                             duration, dotted = get_note_duration(start_time, end_time)
-                            note_name = get_note(note)
+                            note_name = get_note(note, note_names)
                             octave = get_octave(note)
                             staff = get_staff(note_name, octave)
 
