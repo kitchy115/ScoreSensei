@@ -94,16 +94,52 @@ def get_note_duration(start_time, end_time):
         return "16th", True
     elif abs(SIXTEENTH_DURATION - (SIXTEENTH_DURATION - (THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2)) / 2 < duration):
         return "16th", False
-    # remove below
-    # elif abs((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - ((THIRTY_SECOND_DURATION + THIRTY_SECOND_DURATION / 2) - THIRTY_SECOND_DURATION) / 2 < duration):
-        # return "32nd", True
-    # remove above
     elif abs(THIRTY_SECOND_DURATION < duration):
         return "32nd", False
     else:
         return "unknown", False
 
 # only used for tying notes between measures
+def get_remainder_notes(leftover):
+    if leftover >= 32:
+        return "whole", False, ("unknown", False)
+    elif leftover > (16 + 8):
+        return "half", True, get_closest_note(leftover - (16 + 8))
+    elif leftover == (16 + 8):
+        return "half", True, ("unknown", False)
+    elif leftover > 16:
+        return "half", False, get_closest_note(leftover - 16)
+    elif leftover == 16:
+        return "half", False, ("unknown", False)
+    elif leftover > (8 + 4):
+        return "quarter", True, get_closest_note(leftover - (8 + 4))
+    elif leftover == (8 + 4):
+        return "quarter", True, ("unknown", False)
+    elif leftover > 8:
+        return "quarter", False, get_closest_note(leftover - 8)
+    elif leftover == 8:
+        return "quarter", False, ("unknown", False)
+    elif leftover > (4 + 2):
+        return "eighth", True, get_closest_note(leftover - (4 + 2))
+    elif leftover == (4 + 2):
+        return "eighth", True, ("unknown", False)
+    elif leftover > 4:
+        return "eighth", False, get_closest_note(leftover - 4)
+    elif leftover == 4:
+        return "eighth", False, ("unknown", False)
+    elif leftover > (2 + 1):
+        return "16th", True, get_closest_note(leftover - (2 + 1))
+    elif leftover == (2 + 1):
+        return "16th", True, ("unknown", False)
+    elif leftover > 2:
+        return "16th", False, get_closest_note(leftover - 2)
+    elif leftover == 2:
+        return "16th", False, ("unknown", False)
+    elif leftover >= 1:
+        return "32nd", False, ("unknown", False)
+    else:
+        return "unknown", False, ("unknown", False)
+
 def get_closest_note(leftover):
     if leftover >= 32:
         return "whole", False
@@ -123,30 +159,28 @@ def get_closest_note(leftover):
         return "16th", True
     elif leftover >= 2:
         return "16th", False
-    elif leftover >= (1 + 0.5):
-        return "32nd", True
     elif leftover >= 1:
         return "32nd", False
     else:
         return "unknown", False
     
 def get_dynamic(velocity):
-    if velocity <= 29:
-        return "ppp"
-    elif velocity <= 39:
-        return "pp"
-    elif velocity <= 49:
-        return "p"
-    elif velocity <= 59:
-        return "mp"
-    elif velocity <= 69:
-        return "mf"
-    elif velocity <= 79:
-        return "f"
-    elif velocity <= 89:
-        return "ff"
-    elif 90 <= velocity:
+    if velocity >= 126:
         return "fff"
+    elif velocity >= 112:
+        return "ff"
+    elif velocity >= 96:
+        return "f"
+    elif velocity >= 80:
+        return "mf"
+    elif velocity >= 64:
+        return "mp"
+    elif velocity >= 48:
+        return "p"
+    elif velocity >= 32:
+        return "pp"
+    elif velocity >= 16:
+        return "ppp"
     
 def note_to_value(duration, dotted):
     result = n_to_v[duration]
@@ -222,12 +256,14 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
     # Generate and append MusicXML note entry
     with open("sheet.musicxml", "a") as file:
         next_tied = tied
-        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # and chord == False:
+        if (create_measure == True) or (note_to_value(duration, dotted) + beat >= time_sig_beats * 8 and chord == False):
             # create new measure
             create_measure = True
             next_tied = True
             # write leftover tied notes to note_buffer
             leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
+            # check if old measure remainder can be expressed in one note or two notes
+            # duration, dotted, next_note = get_remainder_notes(time_sig_beats * 8 - beat) # next_note = (next_duration, next_dotted)
             duration, dotted = get_closest_note(time_sig_beats * 8 - beat)
             if leftover != 0:
                 # calc first note
@@ -238,7 +274,6 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
                     # calc second note
                     l2 = True
                     l2_duration, l2_dotted = get_closest_note(leftover)
-
                 if l1_duration != "unknown":
                     # write l1 to buffer
                     l1_note_buffer.append("<note>\n")
@@ -308,7 +343,7 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
             if dotted == True:
                 file.write(f"<dot/>\n")
             file.write(f"<staff>{staff}</staff>\n")
-            if create_measure == True and tied == False:
+            if (create_measure == True and tied == False): # or next_note[0] != "unknown":
                 file.write("<notations>\n")
                 file.write("<tied type=\"start\"/>\n")
                 file.write("</notations>\n")
@@ -492,8 +527,20 @@ def main():
                             else:
                                 chord = False
 
-                            if beat != start_beat and backup != True and duration != "unknown" and chord == False:
-                                print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
+                            # if beat != start_beat and backup != True and duration != "unknown" and chord == False:
+                                # print(f"{beat} != {start_beat}, Writing backup: {beat - start_beat}")
+                                # write_backup(beat - start_beat)
+                                # beat = start_beat
+                                # backup = True
+                                # voice = 2
+
+                            if start_beat != beat and duration != "unknown" and backup == True and chord == False:
+                                # end backup
+                                print(f"Start beat: {start_beat} != Beat: {beat}, Ending Backup.. New beat: {beat}")
+                                backup = False
+
+                            if start_beat < beat and duration != "unknown" and chord == False and backup != True:
+                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
                                 write_backup(beat - start_beat)
                                 beat = start_beat
                                 backup = True
@@ -514,6 +561,7 @@ def main():
                             
                     if create_measure == True:
                         new_beat = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat) # record leftover from first note
+                        beat = time_sig_beats * 8
                         for note in note_start_times:
                             # TODO generate unique voices for each non-chord note
                             # TODO thoroughly test
@@ -532,10 +580,15 @@ def main():
                             else:
                                 chord = False
 
-                            if beat != start_beat and backup != True and duration != "unknown" and chord == False:
-                                # end of measure, can assume beat is max
-                                print(f"{time_sig_beats * 8} != {start_beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
-                                write_backup(time_sig_beats * 8 - start_beat)
+                            if start_beat != beat and duration != "unknown" and backup == True and chord == False:
+                                # end backup
+                                print(f"Start beat: {start_beat} != Beat: {beat}, Ending Backup.. New beat: {after_backup_beat}")
+                                beat = after_backup_beat
+                                backup = False
+
+                            if start_beat < beat and duration != "unknown" and chord == False and backup != True:
+                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
+                                write_backup(beat - start_beat)
                                 beat = start_beat
                                 backup = True
                                 voice = 2
@@ -552,6 +605,9 @@ def main():
 
                                 beat, create_measure, l1_note_buffer, l2_note_buffer, tied = generate_note(beat, create_measure, duration, note_name, octave, chord, voice, dotted, staff, time_sig_beats, l1_note_buffer, l2_note_buffer, tied)
                                 print(f"beat: {beat} measure: {measure}")
+
+                                if backup == True:
+                                    after_backup_beat = note_to_value(duration, dotted)
 
                             # push copy of note back onto note_start_times
                             leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
