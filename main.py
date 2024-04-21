@@ -536,11 +536,11 @@ def main():
 
                             if start_beat != beat and duration != "unknown" and backup == True and chord == False:
                                 # end backup
-                                print(f"Start beat: {start_beat} != Beat: {beat}, Ending Backup.. New beat: {beat}")
+                                print(f"Start beat: {start_beat} != Beat: {beat}, Ending Backup..")
                                 backup = False
 
                             if start_beat < beat and duration != "unknown" and chord == False and backup != True:
-                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
+                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {beat - start_beat}")
                                 write_backup(beat - start_beat)
                                 beat = start_beat
                                 backup = True
@@ -587,8 +587,22 @@ def main():
                                 backup = False
 
                             if start_beat < beat and duration != "unknown" and chord == False and backup != True:
-                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {time_sig_beats * 8 - start_beat}")
+                                print(f"Start beat: {start_beat} < Beat: {beat}, Writing backup: {beat - start_beat}")
                                 write_backup(beat - start_beat)
+                                # used when a note is supposed to be apart of a chord but other note get written in between them
+                                if note_to_value(duration, dotted) + start_beat > time_sig_beats * 8 and new_beat > 0:
+                                    # TODO test
+                                    # backup by l1
+                                    duration_1, dotted_1 = get_closest_note(new_beat)
+                                    l1_note_buffer.append("<backup>\n")
+                                    l1_note_buffer.append(f"<duration>{note_to_value(duration_1, dotted_1)}</duration>\n")
+                                    l1_note_buffer.append("</backup>\n")
+                                    if new_beat - note_to_value(duration_1, dotted_1) > 0:
+                                        # backup by l2
+                                        duration_2, dotted_2 = get_closest_note(new_beat - note_to_value(duration_1, dotted_1))
+                                        l2_note_buffer.append("<backup>\n")
+                                        l2_note_buffer.append(f"<duration>{note_to_value(duration_2, dotted_2)}</duration>\n")
+                                        l2_note_buffer.append("</backup>\n")
                                 beat = start_beat
                                 backup = True
                                 voice = 2
