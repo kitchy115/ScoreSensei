@@ -30,7 +30,7 @@ template2 = ["<staves>2</staves>\n",
 
 template_ending = ["</measure>\n",
                    "</part>\n",
-                    "</score-partwise>"]
+                   "</score-partwise>"]
 
 note_template = ["<note>\n",
                  "<pitch>\n"]
@@ -414,7 +414,7 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
 
     return beat, create_measure, l1_note_buffer, l2_note_buffer
 
-# main(midi_note, file_name)
+# class sheet:
 def main():
     note_start_times = {}
     buffer_note_start_times = {}
@@ -432,11 +432,17 @@ def main():
     create_measure = False
     l1_note_buffer = []
     l2_note_buffer = []
+    last_note_end_time = 0 # when the last note ends
+    none_names = []
+    path = ""
+    # end of data class
 
     try:
         print('*** Ready to play ***')
         print('**Press [`] to quit**')
 
+
+        # create_sheet(path, key, time_sig, bpm)
         with open("sheet.musicxml", "w") as file:
             file.writelines(template1)
 
@@ -447,8 +453,8 @@ def main():
             file.writelines(template2)
 
         note_names = get_note_names(key)
-
-        last_note_end_time = 0 # when the last note ends
+        # write to sheet.json
+        # end of create_sheet
 
         while not keyboard.is_pressed('`'):
             # Detect keypress on input
@@ -457,6 +463,8 @@ def main():
                 midi_events = input_device.read(1000)
                 
                 for event in midi_events:
+                    # start of update_score()
+                    # load sheet.json
                     print(event)
                     data, timestamp = event[0], event[1]
                     status, note, velocity, _ = data
@@ -655,13 +663,15 @@ def main():
                         note_start_times = buffer_note_start_times
                         buffer_note_start_times = {} # clear buffer dict
 
+        # write to json file
+
     finally:
         # Close the midi interface
         midi.quit()
 
-        # write template_ending 
-        with open("sheet.musicxml", "a") as file:
-            file.writelines(template_ending)
+        # write template_ending
+        # with open("sheet.musicxml", "a") as file:
+            # file.writelines(template_ending)
 
 # first line of code
 main() # call main

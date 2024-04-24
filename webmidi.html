@@ -35,6 +35,8 @@
         // e = function being called (will be replaced by django call?)
         mySynth.channels[1].addListener("noteon", e => {
           document.body.innerHTML+= `${e.message.data} <br>`;
+          // write data to json
+          // put(url, json)
         });
 
         mySynth.channels[1].addListener("noteoff", e => {
