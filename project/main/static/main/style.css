@@ -20,6 +20,13 @@ body{
   background-color: #b3c2a8;
 }
 
+ul.b {
+  list-style-type: square;
+  font-family: Tech;
+  font-size: 20px;
+  color: white;
+}
+
 .mcenter {
   margin: 0;
   position: absolute;
@@ -122,6 +129,7 @@ ul {
   margin-right: 75px;
 }
 
+
 .sheet-music-container{
   border: 2px solid #ccc; /* Example border style */
   padding: 10px; /* Example padding */
@@ -132,6 +140,14 @@ ul {
   flex-direction: row;
   flex-wrap: wrap;
 }
+
+/* I noticed OSMD used a container/canvas called "osmdCanvas" while trying to research this is all the code I found for it on their CSS sheet */
+/*
+#osmdCanvas
+{
+  width: 100%;
+}
+*/
 
 /* Time Signature */
 .cust-select{
