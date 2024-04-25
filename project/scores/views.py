@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from django.contrib.auth.decorators import login_required
+from django.core.files import File
 from django.shortcuts import redirect, render
 
 from .models import Score
@@ -8,15 +11,26 @@ from .models import Score
 
 @login_required(redirect_field_name=None)
 def create_score(request):
-    title = request.POST["filename"]
-    score = Score(user=request.user, title=title)
-    score.save()
-    return redirect("accounts:dashboard", username=request.user.username)
+    user_id = request.user
+    username = request.user.username
+    score_title = request.POST["score-title"].lower()
 
+    filepath = Path().resolve() / "files" / username / f"{score_title}.xml"
+    filepath.parent.mkdir(parents=True, exist_ok=True)
 
-@login_required(redirect_field_name=None)
-def all_scores(request):
-    pass
+    # django creates a copy of the file for the db
+    with open(filepath, "a+") as fp:
+        score = Score(
+            user=user_id,
+            score_title=score_title,
+            score_xml=File(fp),
+        )
+        score.save()
+
+    # delete original file
+    filepath.unlink()
+
+    return redirect("accounts:dashboard", username=username)
 
 
 @login_required(redirect_field_name=None)

@@ -1,22 +1,21 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
-<!-- BUTTONS -->
-  <!--back button to send user back to dashboard-->
-  <a href="{% url 'scores: dashboard_page.html' %}" class="btn mt-4"> BACK </a>
+  <!-- BUTTONS -->
+  <!-- back button to send user back to dashboard -->
+  <a href="{% url 'accounts:dashboard' username=user.username %}" class="btn mt-4">BACK</a>
 
   <!-- BEGIN RECORDING BUTTON -->
-  <!-- need to mess with intervals so server doesn't keep running due to setInterval function-->
+  <!-- need to mess with intervals so server doesn't keep running due to setInterval function -->
   <!-- is there a way to stop interval so server doesn't keep running -->
-  <a href = "#" class = "btn mt-4"> BEGIN RECORDING </a>
+  <a href="#" class="btn mt-4">BEGIN RECORDING</a>
 
   <!-- same idea with stop recording -->
-  <!--would make server stop running-->
-  <a href="#" class = "btn mt-4"> STOP RECORDING </a>
+  <!-- would make server stop running -->
+  <a href="#" class="btn mt-4">STOP RECORDING</a>
 
-  <!-- possible download button here if user wants to download XML file-->
-  <!--<a href="#" class = "btn mt-4"> DOWNLOAD </a> -->
+  <!-- possible download button here if user wants to download XML file -->
+  <!-- <a href="#" class = "btn mt-4"> DOWNLOAD </a> -->
 
   <!-- MAIN CONTENT -->
 
@@ -48,5 +47,4 @@
       </script>
     </div>
   </div>
-
 {% endblock %}

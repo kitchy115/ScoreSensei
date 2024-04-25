@@ -1,48 +1,46 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!--DASHBOARD (MUSIC XML FILES PAGE ON FIGMA)-->
-<h1 style = "font-size: 50px; font-family: Tech; color: white"> {{ username }} files: </h1>
+  <!-- DASHBOARD (MUSIC XML FILES PAGE ON FIGMA) -->
+  <h1 style="font-size: 50px; font-family: Tech; color: white">{{ user.username }}'s files:</h1>
 
-
-<!--USER ENTRY SECTION-->
-<div>
+  <!-- USER ENTRY SECTION -->
+  <div>
     <div class="user-section">
-        <div class="form-group" style="width: 200px;">
-          <form action="{% url 'scores:create_score' %}" method="POST">
-            {% csrf_token %}
-            <div class="form-group mt-2" style="width: 275px;">
-              <input type="filename" name="filename" class="form-style" placeholder="Enter a file name" />
+      <div class="form-group" style="width: 200px;">
+        <form action="{% url 'scores:create_score' %}" method="POST">
+          {% csrf_token %}
+          <div class="form-group mt-2" style="width: 275px;">
+            <input type="text" name="score-title" class="form-style" placeholder="Score title" required />
 
-              <div class="form-group mt-2" style="width: 200px;">
-                <input type="number" name="bpm" class="form-style" placeholder="Beats per Minute" />
-              </div>
-              
-              <div class="form-group mt-2" style="width: 200px;">
-                <input type="number" name="key" class="form-style" placeholder="Key" />
-              </div>
-
-              <div class = "cust-select" style = "width: 200px">
-                <label for = "Time Signature" style = "color: white; font-size: 16px; font-family: Tech;"> Time Signature: </label>
-                <select name = "Time Signature" id = "Time Signature">
-                  <option value = "2/4"> 2/4 </option>
-                  <option value = "3/4"> 3/4 </option>
-                  <option value = "4/4"> 4/4 </option>
-                </select>
-              </div>
-
-              <button type="submit" class="btn mt-4" name="submit">Create Score</button>
+            <div class="form-group mt-2" style="width: 200px;">
+              <input type="number" name="bpm" class="form-style" placeholder="Beats per Minute" />
             </div>
-          </form>
-        </div>
-        </div>
-      
-</div>
 
-<div>
-    <a href="{% url 'scores:read_score' slug='example' %}" class="btn mt-4">EXPORT</a>
-</div>
+            <div class="form-group mt-2" style="width: 200px;">
+              <input type="number" name="key" class="form-style" placeholder="Key" />
+            </div>
 
-<!--HAVE EXISTING FILES DISPLAY HERE-->
+            <div class="cust-select" style="width: 200px">
+              <label for="Time Signature" style="color: white; font-size: 16px; font-family: Tech;">Time Signature:</label>
+              <select name="Time Signature" id="Time Signature">
+                <option value="2/4">2/4</option>
+                <option value="3/4">3/4</option>
+                <option value="4/4">4/4</option>
+              </select>
+            </div>
 
+            <button type="submit" class="btn mt-4" name="submit">Create Score</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- HAVE EXISTING FILES DISPLAY HERE -->
+
+  {% for score in scores %}
+    <h1>{{ score.score_title }}</h1>
+    <a href="{% url 'scores:read_score' slug=score.score_slug %}" class="btn mt-4"></a>
+  {% endfor %}
 {% endblock %}

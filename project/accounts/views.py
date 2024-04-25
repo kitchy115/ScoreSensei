@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import redirect, render
 
+from scores.models import Score
+
 from .forms import RegistrationForm
 
 # Create your views here.
@@ -54,4 +56,5 @@ def dashboard(request, username):
     if username != request.user.username:
         raise Http404
 
-    return render(request, "accounts/dashboard_page.html", {"username": username})
+    scores = Score.objects.filter(user=request.user)
+    return render(request, "accounts/dashboard_page.html", {"scores": scores})

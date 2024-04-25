@@ -9,6 +9,8 @@ media
 static/
 !project/*/static/
 
+files/
+
 # Backup files #
 *.bak
 
