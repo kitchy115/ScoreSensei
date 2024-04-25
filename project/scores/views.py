@@ -45,4 +45,6 @@ def update_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def delete_score(request, slug):
-    pass
+    score = Score.objects.get(user_id=request.user, score_slug=slug)
+    score.delete()
+    return redirect("accounts:dashboard", username=request.user.username)

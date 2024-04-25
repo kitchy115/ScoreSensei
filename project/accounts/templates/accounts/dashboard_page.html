@@ -41,6 +41,7 @@
 
   {% for score in scores %}
     <h1>{{ score.score_title }}</h1>
-    <a href="{% url 'scores:read_score' slug=score.score_slug %}" class="btn mt-4"></a>
+    <a href="{% url 'scores:read_score' slug=score.score_slug %}" class="btn mt-4">Open</a>
+    <a href="{% url 'scores:delete_score' slug=score.score_slug %}" class="btn mt-4">Delete</a>
   {% endfor %}
 {% endblock %}
