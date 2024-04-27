@@ -105,7 +105,7 @@ def create_score(request):
     username = request.user.username
     score_title = request.POST["score-title"].lower()
 
-    filepath = Path().resolve() / "files" / username / f"{score_title}.xml"
+    filepath = Path().resolve() / "files" / username / f"{score_title}.musicxml"
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     # django creates a copy of the file for the db
@@ -128,14 +128,15 @@ def create_score(request):
     # sheet.note_names = get_note_names(key)
     sheet.note_names = get_note_names(0)
 
-    # with open(score.get_absolute_url(), "a") as file:
-        # file.writelines(template1)
+    with open(score.score_xml.name, "a") as file:
+        file.writelines(template1)
     
-    #write_key(sheet.key, score.get_absolute_url())
-    #write_time_sig(sheet.time_sig_beats, score.get_absolute_url())
+    # write_key(key, ...)
+    write_key(0, score.score_xml.name)
+    write_time_sig(sheet.time_sig_beats, score.score_xml.name)
 
-    #with open(score.get_absolute_url(), "a") as file:
-        #file.writelines(template2)
+    with open(score.score_xml.name, "a") as file:
+        file.writelines(template2)
 
     # json.dumps(dataclasses.asdict(sheet))
 
@@ -150,11 +151,11 @@ def read_score(request, slug):
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
-    # sheet = Sheet(**json.loads(score.get_absolute_url()))
+    # sheet = Sheet(**json.loads(?))
 
 
 
-    # sheet = update_sheet(sheet, score.get_absolute_url(), event)
+    # sheet = update_sheet(sheet, score.score_xml.name, event)
 
 
 
