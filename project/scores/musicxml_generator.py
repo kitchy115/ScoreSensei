@@ -131,6 +131,8 @@ def get_dynamic(velocity):
         return "pp"
     elif velocity >= 16:
         return "ppp"
+    else:
+        return "unknown"
     
 def note_to_value(duration, dotted):
     result = n_to_v[duration]
@@ -353,7 +355,7 @@ def update_sheet(sheet, path, event):
 
     if status == 144 and velocity > 0:  # key pressed
         # starts at 0, then gets updated IN the loop
-        sheet.note_start_times[note] = (time.time(), sheet.beat, False) # record start time and amount of beats in measure (used by <backup>)
+        sheet.note_start_times[note] = [time.time(), sheet.beat, False] # record start time and amount of beats in measure (used by <backup>)
         sheet.dynamic = get_dynamic(velocity)
         # print(f"Start time: {sheet.note_start_times[note][0]}, Start beat: {sheet.note_start_times[note][1]}, Dynamic: {sheet.dynamic}, Velocity: {velocity}")
         # rest is calculated by the current notes start time - the last notes end time
@@ -379,7 +381,7 @@ def update_sheet(sheet, path, event):
             if duration != "unknown":
                 sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer = generate_rest(sheet.beat, sheet.create_measure, duration, dotted, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer)
                 
-                sheet.note_start_times[note] = (sheet.note_start_times[note][0], sheet.beat, False) # update starting beat for note
+                sheet.note_start_times[note] = [sheet.note_start_times[note][0], sheet.beat, False] # update starting beat for note
                 # print(f"Updated start beat: {sheet.note_start_times[note][1]}")
         
         sheet.last_note_start_time = sheet.note_start_times[note][0] # record start time for next note
@@ -404,7 +406,7 @@ def update_sheet(sheet, path, event):
             if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
                 # end backup
                 # print(f"Start beat: {start_beat} != Beat: {sheet.beat}, Ending Backup..")
-                backup = False
+                sheet.backup = False
 
             if start_beat < sheet.beat and duration != "unknown" and sheet.chord == False and sheet.backup != True:
                 # print(f"Start beat: {start_beat} < Beat: {sheet.beat}, Writing backup: {sheet.beat - start_beat}")
@@ -474,7 +476,7 @@ def update_sheet(sheet, path, event):
                 sheet.backup = True
                 sheet.voice = 2
             
-            sheet.previous_note = (start_time, duration, dotted) # record for next note
+            sheet.previous_note = [start_time, duration, dotted] # record for next note
 
             # print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
             sheet.last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
