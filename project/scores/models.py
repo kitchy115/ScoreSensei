@@ -11,6 +11,7 @@ class Score(models.Model):
     score_title = models.CharField(max_length=100)
     score_slug = AutoSlugField(populate_from="score_title", unique_with="user")
     score_xml = models.FileField()
+    score_json = models.FileField()
 
     def save(self, *args, **kwargs):
         # check if the title already exists
@@ -28,4 +29,4 @@ class Score(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("read_score", kwargs={"slug": self.slug})
+        return reverse("read_score", kwargs={"slug": self.score_slug})

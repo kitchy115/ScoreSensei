@@ -22,7 +22,8 @@ class Migration(migrations.Migration):
                 ('score_title', models.CharField(max_length=100)),
                 ('score_slug', autoslug.fields.AutoSlugField(editable=False, populate_from='score_title', unique_with=('user',))),
                 ('score_xml', models.FileField(upload_to='')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                ('score_json', models.FileField(upload_to='')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL))
             ],
         ),
     ]
