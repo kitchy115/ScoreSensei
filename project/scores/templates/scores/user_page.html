@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block content %}
   <!-- BUTTONS -->
   <!-- back button to send user back to dashboard -->
@@ -9,10 +11,14 @@
   <!-- need to mess with intervals so server doesn't keep running due to setInterval function -->
   <!-- is there a way to stop interval so server doesn't keep running -->
   <a href="#" class="btn mt-4">BEGIN RECORDING</a>
+  <!-- webmidi.enable() -->
+  <!-- enable setInterval -->
 
   <!-- same idea with stop recording -->
   <!-- would make server stop running -->
   <a href="#" class="btn mt-4">STOP RECORDING</a>
+  <!-- webmidi.disable() -->
+  <!-- disable setInterval -->
 
   <!-- possible download button here if user wants to download XML file -->
   <!-- <a href="#" class = "btn mt-4"> DOWNLOAD </a> -->
@@ -20,11 +26,53 @@
   <!-- MAIN CONTENT -->
 
   <!-- SHEET MUSIC SETUP -->
+  <!-- not sure if this goes here -->
+  <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+    <script type="module">
+
+      WebMidi
+        .enable()
+        .then(onEnabled)
+        .catch(err => alert(err));
+
+      function onEnabled()
+      {
+        const mySynth = WebMidi.inputs[0];
+
+        var csrftoken = getCookie('csrftoken');
+
+        mySynth.channels[1].addListener("noteon", e => {
+          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
+        });
+
+        mySynth.channels[1].addListener("noteoff", e => {
+          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
+        });
+      }
+
+      function getCookie(name)
+      {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+      }
+
+    </script>
 
   <!-- DISPLAY -->
   <div>
     <div class="sheet-music-container">
-      <script src="opensheetmusicdisplay.min.js"></script>
+      <script src="{% static 'main/opensheetmusicdisplay.min.js' %}"></script>
       <div id="osmdCanvas"></div>
       <script>
         var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('osmdCanvas', {
@@ -37,11 +85,10 @@
         setInterval(renderSheet, 100)
         
         function renderSheet() {
-          fetch('http://localhost:8080/sheet.musicxml', { cache: 'no-cache' })
+          fetch("{% url 'scores:get_xml' slug=score.score_slug %}", { cache: 'no-cache' })
         
-          osmd.load('http://localhost:8080/sheet.musicxml').then(function () {
+          osmd.load("{% url 'scores:get_xml' slug=score.score_slug %}").then(function () {
             osmd.render()
-            // window.scrollTo(0, document.body.scrollHeight);
           })
         }
       </script>

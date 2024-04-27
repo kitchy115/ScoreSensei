@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from dataclasses import field
 from .musicxml_generator import update_sheet
 
+from django.http import HttpResponse
+
 # Create your views here.
 
 @dataclass
@@ -126,9 +128,10 @@ def create_score(request):
     filepath_json.unlink()
 
     sheet = Sheet()
-    sheet.time_sig_beats = request.POST["Time Signature"]
-    sheet.bpm = request.POST["bpm"]
+    sheet.time_sig_beats = int(request.POST["Time Signature"])
+    sheet.bpm = int(request.POST["bpm"])
     sheet.note_names = get_note_names(request.POST["key"])
+    sheet.previous_note = [None, None, None]
 
     with open(score.score_xml.name, "a") as file:
         file.writelines(template1)
@@ -147,7 +150,7 @@ def create_score(request):
 
 @login_required(redirect_field_name=None)
 def read_score(request, slug):
-    return render(request, "scores/user_page.html")
+    return render(request, "scores/user_page.html", {"score": Score.objects.get(user_id=request.user, score_slug=slug)})
 
 
 @login_required(redirect_field_name=None)
@@ -156,11 +159,13 @@ def update_score(request, slug):
     with open(score.score_json.name, "r") as file:
         sheet = Sheet(**json.loads(file.read()))
 
-    sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.POST["event"]))
-
+    print(request.body)
+    sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
 
     with open(score.score_json.name, "w") as file:
         file.write(json.dumps(dataclasses.asdict(sheet)))
+
+    return HttpResponse(status=200)
 
 
 @login_required(redirect_field_name=None)
@@ -168,3 +173,9 @@ def delete_score(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
     score.delete()
     return redirect("accounts:dashboard", username=request.user.username)
+
+
+@login_required(redirect_field_name=None)
+def get_xml(request, slug):
+    score = Score.objects.get(user_id=request.user, score_slug=slug)
+    return HttpResponse(open(score.score_xml.name).read(), content_type='text/xml')
