@@ -140,7 +140,7 @@ def note_to_value(duration, dotted):
         result = result + n_to_v[duration] / 2
     return result
 
-def get_staff(note, octave):
+def get_staff(octave):
     if octave < 4: # less than C4
         return 2
     else:
@@ -338,8 +338,8 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
 
 def update_sheet(sheet, path, event):
     status, note, velocity = event
-    print(f"Path: {path}")
     print(f"Event: {event}")
+    note = str(note) # make note number string for simplicity
 
     if status == 144 and velocity > 0:  # key pressed
         # starts at 0, then gets updated IN the loop
@@ -375,15 +375,16 @@ def update_sheet(sheet, path, event):
         sheet.last_note_start_time = sheet.note_start_times[note][0] # record start time for next note
 
     elif (status == 128) or (status == 144 and velocity == 0): # key released
-        if str(note) in sheet.note_start_times:
-            start_time, start_beat, tied = sheet.note_start_times.pop(str(note), None)
+        if note in sheet.note_start_times:
+            start_time, start_beat, tied = sheet.note_start_times.pop(note, None)
             end_time = time.time()
             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
             duration, dotted = get_note_duration(start_time, end_time, sheet.bpm)
-            note_name = get_note(note, sheet.note_names)
-            octave = get_octave(note)
-            staff = get_staff(note_name, octave)
+            note_name = get_note(int(note), sheet.note_names)
+            octave = get_octave(int(note))
+            staff = get_staff(octave)
 
+            print(f"Previous_note: {sheet.previous_note[0]}")
             if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -0.06
                 and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                 and duration != "unknown"):
@@ -428,7 +429,7 @@ def update_sheet(sheet, path, event):
             duration, dotted = get_note_duration(start_time, end_time, sheet.bpm)
             note_name = get_note(int(note), sheet.note_names)
             octave = get_octave(int(note))
-            staff = get_staff(note_name, octave)
+            staff = get_staff(octave)
 
             if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -0.06
                 and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted

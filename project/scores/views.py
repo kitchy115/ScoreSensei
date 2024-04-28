@@ -156,11 +156,16 @@ def read_score(request, slug):
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
+
+    # begin read
     with open(score.score_json.name, "r") as file:
         sheet = Sheet(**json.loads(file.read()))
+    # end read
 
+    # begin write
     print(request.body)
     sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
+    # end write
 
     with open(score.score_json.name, "w") as file:
         file.write(json.dumps(dataclasses.asdict(sheet)))
