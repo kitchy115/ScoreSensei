@@ -162,13 +162,13 @@ def update_score(request, slug):
         sheet = Sheet(**json.loads(file.read()))
     # end read
 
-    # begin write
     print(request.body)
     sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
-    # end write
 
+    # begin write
     with open(score.score_json.name, "w") as file:
         file.write(json.dumps(dataclasses.asdict(sheet)))
+    # end write
 
     return HttpResponse(status=200)
 
