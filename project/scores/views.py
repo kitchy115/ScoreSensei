@@ -1,4 +1,5 @@
 import json
+import threading
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -35,6 +36,8 @@ class Sheet:
     note_names: list = field(default_factory=list)
     bpm: int = 60
     time_sig_beats: int = 4
+
+lock = threading.Lock()
 
 
 # helper fuctions
@@ -152,17 +155,18 @@ def read_score(request, slug):
 def update_score(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
 
-    # begin read
+    while lock.locked():
+        pass
+    lock.acquire()
     with open(score.score_json.name, "r") as file:
         sheet = Sheet(**json.loads(file.read()))
-    # end read
 
     print(request.body)
     sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
 
-    # begin write
     with open(score.score_json.name, "w") as file:
         file.write(json.dumps(asdict(sheet)))
+    lock.release()
 
     return HttpResponse(status=200)
 
