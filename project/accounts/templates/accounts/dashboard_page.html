@@ -7,18 +7,17 @@
   <!-- USER ENTRY SECTION -->
   <div>
     <div class="user-section">
-      <div class="form-group" style="width: 200px;">
         <form action="{% url 'scores:create_score' %}" method="POST">
           {% csrf_token %}
-          <div class="form-group mt-2" style="width: 275px;">
+          <div class="form-group mt-2" style="width: 200px;">
             <input type="text" name="score-title" class="form-style" placeholder="Score title" required />
 
             <div class="form-group mt-2" style="width: 200px;">
-              <input type="number" name="bpm" class="form-style" placeholder="Beats per Minute" />
+              <input type="number" name="bpm" class="form-style" placeholder="Beats per Minute" required/>
             </div>
 
             <div class="form-group mt-2" style="width: 200px;">
-              <input type="number" name="key" class="form-style" placeholder="Key" />
+              <input type="number" name="key" class="form-style" placeholder="Key" required/>
             </div>
 
             <div class="cust-select" style="width: 200px">
@@ -33,7 +32,6 @@
             <button type="submit" class="btn mt-4" name="submit">Create Score</button>
           </div>
         </form>
-      </div>
     </div>
   </div>
 
