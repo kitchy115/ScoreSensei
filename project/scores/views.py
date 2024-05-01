@@ -36,6 +36,10 @@ class Sheet:
     note_names: list = field(default_factory=list)
     bpm: int = 60
     time_sig_beats: int = 4
+    pedal_pressed: bool = False
+    notes_during_pedal: bool = False
+    pedal_markup_buffer: list = field(default_factory=list)
+
 
 lock = threading.Lock()
 

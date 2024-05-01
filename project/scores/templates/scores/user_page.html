@@ -41,11 +41,7 @@
 
         var csrftoken = getCookie('csrftoken');
 
-        mySynth.channels[1].addListener("noteon", e => {
-          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
-        });
-
-        mySynth.channels[1].addListener("noteoff", e => {
+        mySynth.channels[1].addListener("midimessage", e => {
           fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
         });
       }
