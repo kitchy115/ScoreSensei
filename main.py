@@ -432,6 +432,10 @@ def main():
     create_measure = False
     l1_note_buffer = []
     l2_note_buffer = []
+    pedal_pressed = False
+    notes_during_pedal = False
+    pedal_markup_buffer = "" # Temporarily hold the pedal markup
+
 
     try:
         print('*** Ready to play ***')
@@ -461,23 +465,17 @@ def main():
                     data, timestamp = event[0], event[1]
                     status, note, velocity, _ = data
 
-                    if 176 <= status <= 191 and note == 64: # pedal events
-                        if velocity >= 64: # pedal pressed
-                            with open("sheet.musicxml", "a") as file:
-                                file.write(f"<direction placement=\"below\">\n")
-                                file.write(f"<direction-type>\n")
-                                file.write(f"<pedal type=\"start\" line=\"yes\"/>\n")
-                                file.write(f"</direction-type>\n")
-                                file.write(f"</direction>\n")
-                        elif velocity < 64: # pedal released
-                            with open("sheet.musicxml", "a") as file:
-                                file.write(f"<direction placement=\"below\">\n")
-                                file.write(f"<direction-type>\n")
-                                file.write(f"<pedal type=\"stop\" line=\"yes\"/>\n")
-                                file.write(f"</direction-type>\n")
-                                file.write(f"</direction>\n")
 
                     if status == 144 and velocity > 0:  # key pressed
+                        # Check if the pedal is pressed
+                        if pedal_pressed:
+                            notes_during_pedal = True
+                            # Check if there is a pedal markup to write
+                            if pedal_markup_buffer:
+                                with open("sheet.musicxml", "a") as file:
+                                    file.write(pedal_markup_buffer)
+                                    pedal_markup_buffer = ""
+                                    
                         # starts at 0, then gets updated IN the loop
                         note_start_times[note] = (time.time(), beat, False) # record start time and amount of beats in measure (used by <backup>)
                         dynamic = get_dynamic(velocity)
@@ -558,6 +556,23 @@ def main():
 
                                 beat, create_measure, l1_note_buffer, l2_note_buffer, tied = generate_note(beat, create_measure, duration, note_name, octave, chord, voice, dotted, staff, time_sig_beats, l1_note_buffer, l2_note_buffer, tied)
                                 print(f"beat: {beat} measure: {measure}")
+
+                    if 176 <= status <= 191 and note == 64: # pedal events
+                        if velocity >= 64:  # pedal pressed
+                            pedal_pressed = True
+                            notes_during_pedal = False
+                            pedal_markup_buffer = "<direction>\n<direction-type>\n<pedal type=\"start\" line=\"yes\"/>\n</direction-type>\n</direction>\n"
+
+                        elif velocity < 64: # pedal released
+                            pedal_pressed = False
+                            # Check if notes were played while pressing the pedal
+                            if notes_during_pedal:
+                                with open("sheet.musicxml", "a") as file:
+                                    # Check if the pedal start markup needs to be written
+                                    if pedal_markup_buffer:
+                                        file.write(pedal_markup_buffer)
+                                    file.write("<direction>\n<direction-type>\n<pedal type=\"stop\" line=\"yes\"/>\n</direction-type>\n</direction>\n")
+                            pedal_markup_buffer = ""
                             
                     if create_measure == True:
                         new_beat = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat) # record leftover from first note
