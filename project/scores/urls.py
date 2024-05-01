@@ -9,5 +9,6 @@ urlpatterns = [
     path("read/<slug:slug>/", views.read_score, name="read_score"),
     path("update/<slug:slug>/", views.update_score, name="update_score"),
     path("delete/<slug:slug>/", views.delete_score, name="delete_score"),
-    path("getxml/<slug:slug>/", views.get_xml, name="get_xml")
+    path("getxml/<slug:slug>/", views.get_xml, name="get_xml"),
+    path("download/<slug:slug>/", views.download_score, name="download_score"),
 ]

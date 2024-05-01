@@ -10,8 +10,8 @@ class Score(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     score_title = models.CharField(max_length=100)
     score_slug = AutoSlugField(populate_from="score_title", unique_with="user")
-    score_xml = models.FileField()
-    score_json = models.FileField()
+    score_xml = models.FileField(max_length=500)
+    score_json = models.FileField(max_length=500)
 
     def save(self, *args, **kwargs):
         # check if the title already exists

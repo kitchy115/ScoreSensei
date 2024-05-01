@@ -10,63 +10,80 @@
   <!-- BEGIN RECORDING BUTTON -->
   <!-- need to mess with intervals so server doesn't keep running due to setInterval function -->
   <!-- is there a way to stop interval so server doesn't keep running -->
-  <a href="#" class="btn mt-4">BEGIN RECORDING</a>
+  <button id="start" class="btn mt-4">BEGIN RECORDING</button>
   <!-- webmidi.enable() -->
   <!-- enable setInterval -->
 
   <!-- same idea with stop recording -->
   <!-- would make server stop running -->
-  <a href="#" class="btn mt-4">STOP RECORDING</a>
+  <button id="stop" class="btn mt-4">STOP RECORDING</button>
   <!-- webmidi.disable() -->
   <!-- disable setInterval -->
 
-  <!-- possible download button here if user wants to download XML file -->
-  <!-- <a href="#" class = "btn mt-4"> DOWNLOAD </a> -->
+  <a href="{% url 'scores:download_score' slug=score.score_slug %}" class="btn mt-4">Download Score</a>
 
   <!-- MAIN CONTENT -->
 
   <!-- SHEET MUSIC SETUP -->
   <!-- not sure if this goes here -->
   <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
-    <script type="module">
-
-      WebMidi
-        .enable()
-        .then(onEnabled)
-        .catch(err => alert(err));
-
-      function onEnabled()
-      {
-        const mySynth = WebMidi.inputs[0];
-
-        var csrftoken = getCookie('csrftoken');
-
-        mySynth.channels[1].addListener("noteon", e => {
-          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
-        });
-
-        mySynth.channels[1].addListener("noteoff", e => {
-          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {method: 'POST', headers: {'Content-type': 'application/json', 'X-CSRFToken': csrftoken}, body: JSON.stringify({"event": e.message.data})})
-        });
-      }
-
-      function getCookie(name)
-      {
-        var cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+  <script type="module">
+    function onEnabled() {
+      const mySynth = WebMidi.inputs[0]
+    
+      var csrftoken = getCookie('csrftoken')
+    
+      mySynth.channels[1].addListener('noteon', (e) => {
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: e.message.data })
+        })
+      })
+    
+      mySynth.channels[1].addListener('noteoff', (e) => {
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: e.message.data })
+        })
+      })
+    }
+    
+    function getCookie(name) {
+      var cookieValue = null
+      if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';')
+        for (var i = 0; i < cookies.length; i++) {
+          var cookie = cookies[i].trim()
+          if (cookie.substring(0, name.length + 1) === name + '=') {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+            break
+          }
         }
-        return cookieValue;
       }
-
-    </script>
+      return cookieValue
+    }
+    
+    let poll = null
+    
+    function start() {
+      WebMidi.enable()
+        .then(onEnabled)
+        .catch((err) => alert(err))
+    
+      poll = setInterval(renderSheet, 100)
+    }
+    
+    function stop() {
+      WebMidi.disable()
+    
+      clearInterval(poll)
+    }
+    
+    document.getElementById('start').addEventListener('click', start)
+    document.getElementById('stop').addEventListener('click', stop)
+  </script>
 
   <!-- DISPLAY -->
   <div>
@@ -80,8 +97,6 @@
           drawTitle: false,
           pageFormat: 'A4_P'
         })
-        
-        setInterval(renderSheet, 100)
         
         function renderSheet() {
           fetch("{% url 'scores:get_xml' slug=score.score_slug %}")

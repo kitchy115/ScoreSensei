@@ -5,11 +5,12 @@ from pathlib import Path
 
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.shortcuts import redirect, render
 
 from .models import Score
 from .musicxml_generator import update_sheet
+from .utils import get_note_names, template1, template2
 
 # Create your views here.
 
@@ -37,61 +38,8 @@ class Sheet:
     bpm: int = 60
     time_sig_beats: int = 4
 
+
 lock = threading.Lock()
-
-
-# helper fuctions
-# TODO move below somewhere else
-def get_note_names(key):
-    note_names = {
-        "-6": ["Cb", "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb"],
-        "-5": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
-        "-4": ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
-        "-3": ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
-        "-2": ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
-        "-1": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
-        "0": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
-        "1": ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
-        "2": ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
-        "3": ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
-        "4": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
-        "5": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
-        "6": ["C", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B"],
-    }
-
-    return note_names[key]
-
-
-template1 = [
-    '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n',
-    "<!DOCTYPE score-partwise PUBLIC\n",
-    '"-//Recordare//DTD MusicXML 4.0 Partwise//EN"\n',
-    '"http://www.musicxml.org/dtds/partwise.dtd">\n',
-    '<score-partwise version="4.0">\n',
-    "<part-list>\n",
-    '<score-part id="P1">\n',
-    "<part-name>Music</part-name>\n",
-    "</score-part>\n",
-    "</part-list>\n",
-    '<part id="P1">\n',
-    '<measure number="1">\n',
-    "<attributes>\n",
-    "<divisions>8</divisions>\n",
-]
-
-
-template2 = [
-    "<staves>2</staves>\n",
-    '<clef number="1">\n',
-    "<sign>G</sign>\n",
-    "<line>2</line>\n",
-    "</clef>\n",
-    '<clef number="2">\n',
-    "<sign>F</sign>\n",
-    "<line>4</line>\n",
-    "</clef>\n" "</attributes>\n",
-]
-# TODO move above somewhere else
 
 
 @login_required(redirect_field_name=None)
@@ -99,13 +47,6 @@ def create_score(request):
     user_id = request.user
     username = request.user.username
     score_title = request.POST["score-title"].lower()
-
-    sheet = Sheet(
-        time_sig_beats=int(request.POST["Time Signature"]),
-        bpm=int(request.POST["bpm"]),
-        note_names=get_note_names(request.POST["key"]),
-        previous_note=[None, None, None],
-    )
 
     BASE_DIR = Path().resolve() / "files" / username
     BASE_DIR.mkdir(parents=True, exist_ok=True)
@@ -122,12 +63,18 @@ def create_score(request):
         xml_fp.write("</key>\n")
 
         xml_fp.write("<time>\n")
-        xml_fp.write(f"<beats>{sheet.time_sig_beats}</beats>\n")
+        xml_fp.write(f"<beats>{request.POST['Time Signature']}</beats>\n")
         xml_fp.write("<beat-type>4</beat-type>\n")
         xml_fp.write("</time>\n")
 
         xml_fp.writelines(template2)
 
+        sheet = Sheet(
+            time_sig_beats=int(request.POST["Time Signature"]),
+            bpm=int(request.POST["bpm"]),
+            note_names=get_note_names(request.POST["key"]),
+            previous_note=[None, None, None],
+        )
         json_fp.write(json.dumps(asdict(sheet)))
 
         score = Score(
@@ -153,19 +100,20 @@ def read_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
-    score = Score.objects.get(user_id=request.user, score_slug=slug)
-
     while lock.locked():
         pass
+
     lock.acquire()
-    with open(score.score_json.name, "r") as file:
-        sheet = Sheet(**json.loads(file.read()))
+    score = Score.objects.get(user_id=request.user, score_slug=slug)
 
-    print(request.body)
-    sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
+    with open(score.score_json.name, "r+") as json_fp:
+        sheet = Sheet(**json.loads(json_fp.read()))
+        sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
 
-    with open(score.score_json.name, "w") as file:
-        file.write(json.dumps(asdict(sheet)))
+        json_fp.seek(0)
+        json_fp.write(json.dumps(asdict(sheet)))
+        json_fp.truncate()
+
     lock.release()
 
     return HttpResponse(status=200)
@@ -182,3 +130,10 @@ def delete_score(request, slug):
 def get_xml(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
     return HttpResponse(open(score.score_xml.name).read(), content_type="text/xml")
+
+
+@login_required(redirect_field_name=None)
+def download_score(request, slug):
+    score = Score.objects.get(user_id=request.user, score_slug=slug)
+    xml_fp = open(score.score_xml.name, "rb")
+    return FileResponse(xml_fp, filename=f"{score.score_slug}.musicxml")
