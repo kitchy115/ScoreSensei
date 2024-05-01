@@ -341,7 +341,17 @@ def update_sheet(sheet, path, event):
     print(f"Event: {event}")
     note = str(note) # make note number string for simplicity
 
+    # TODO thoroughly test pedal
     if status == 144 and velocity > 0:  # key pressed
+        # Check if the pedal is pressed
+        if sheet.pedal_pressed:
+            sheet.notes_during_pedal = True
+            # Check if there is a pedal markup to write
+            if len(sheet.pedal_markup_buffer) > 0:
+                with open(path, "a") as fp:
+                    fp.writelines(sheet.pedal_markup_buffer)
+                    sheet.pedal_markup_buffer = []
+
         # starts at 0, then gets updated IN the loop
         sheet.note_start_times[note] = [time.time(), sheet.beat, False] # record start time and amount of beats in measure (used by <backup>)
         sheet.dynamic = get_dynamic(velocity)
@@ -416,6 +426,23 @@ def update_sheet(sheet, path, event):
 
                 sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, sheet.voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, path)
                 print(f"beat: {sheet.beat} measure: {sheet.measure}")
+
+    elif status == 176 and note == "64":
+        if velocity == 64:  # pedal pressed
+            sheet.pedal_pressed = True
+            sheet.notes_during_pedal = False # TODO test if this can be moved inside 'elif velocity == 0:'
+            sheet.pedal_markup_buffer = ["<direction>\n", "<direction-type>\n", "<pedal type=\"start\" line=\"yes\"/>\n", "</direction-type>\n", "</direction>\n"]
+
+        elif velocity == 0: # pedal released
+            sheet.pedal_pressed = False
+            # Check if notes were played while pressing the pedal
+            if sheet.notes_during_pedal:
+                with open(path, "a") as fp:
+                    # Check if the pedal start markup needs to be written
+                    if len(sheet.pedal_markup_buffer) > 0:
+                        fp.writelines(sheet.pedal_markup_buffer)
+                    fp.writelines(["<direction>\n", "<direction-type>\n", "<pedal type=\"stop\" line=\"yes\"/>\n", "</direction-type>\n", "</direction>\n"])
+            sheet.pedal_markup_buffer = []
             
     if sheet.create_measure == True:
         new_beat = note_to_value(duration, dotted) - (sheet.time_sig_beats * 8 - sheet.beat) # record leftover from first note
