@@ -459,9 +459,17 @@ def update_sheet(sheet, path, event):
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
                     sheet.chord = True
+
+                    # special condition when chord creates new measure
+                    if start_beat < sheet.beat and duration != "unknown" and sheet.backup != True:
+                        print(f"Start beat: {start_beat} < Beat: {sheet.beat} and Chord: True, New beat: {start_beat}")
+                        # sheet.after_backup_beat = sheet.beat
+                        sheet.beat = start_beat
+                        sheet.backup = True # true, but no backup is written
                 else:
                     sheet.chord = False
 
+                # might need to change to start_beat > sheet.beat
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
                     # end backup
                     print(f"Start beat: {start_beat} != Beat: {sheet.beat}, Ending Backup.. New beat: {sheet.after_backup_beat}")
@@ -503,7 +511,7 @@ def update_sheet(sheet, path, event):
                     print(f"beat: {sheet.beat} measure: {sheet.measure}")
 
                     if sheet.backup == True:
-                        sheet.after_backup_beat = note_to_value(duration, dotted)
+                        sheet.after_backup_beat = sheet.beat + note_to_value(duration, dotted)
 
                 # push copy of note back onto sheet.note_start_times
                 leftover = note_to_value(duration, dotted) - (sheet.time_sig_beats * 8 - sheet.beat)

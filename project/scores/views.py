@@ -24,7 +24,7 @@ class Sheet:
     measure: int = 1
     previous_note: list = field(
         default_factory=list
-    )  # [start_time, duration, start_beat]
+    )  # [start_time, start_beat, tied]
     chord: bool = False
     backup: bool = False  # flag for when a <backup> is used (needed to know when to place a <forward>)
     last_note_start_time: float = 0
