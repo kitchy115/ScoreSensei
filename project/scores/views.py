@@ -40,7 +40,7 @@ class Sheet:
     pedal_pressed: bool = False
     notes_during_pedal: bool = False
     pedal_markup_buffer: list = field(default_factory=list)
-
+    after_backup_beat: int = 0
 
 
 lock = threading.Lock()
