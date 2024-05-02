@@ -441,8 +441,11 @@ def update_sheet(sheet, path, event):
                 sheet.pedal_markup_buffer = []
                 
         if sheet.create_measure == True:
+            print("Creating new measure")
             new_beat = note_to_value(duration, dotted) - (sheet.time_sig_beats * 8 - sheet.beat) # record leftover from first note
             sheet.beat = sheet.time_sig_beats * 8
+            # sheet.backup = False
+            print(f"Beat: {sheet.beat}.. Interating through notes")
             for note in sheet.note_start_times:
                 # TODO generate unique voices for each non-chord note
                 # TODO thoroughly test
@@ -461,7 +464,7 @@ def update_sheet(sheet, path, event):
                     sheet.chord = True
 
                     # special condition when chord creates new measure
-                    if start_beat < sheet.beat and duration != "unknown" and sheet.backup != True:
+                    if start_beat < sheet.beat and duration != "unknown":
                         print(f"Start beat: {start_beat} < Beat: {sheet.beat} and Chord: True, New beat: {start_beat}")
                         # sheet.after_backup_beat = sheet.beat
                         sheet.beat = start_beat
@@ -524,6 +527,7 @@ def update_sheet(sheet, path, event):
                 else:
                     sheet.buffer_note_start_times[note] = (event_time, new_beat, tied)
             # end of for each loop
+            print("Finished iterating through notes")
 
             if sheet.backup == True:
                 sheet.backup = False
