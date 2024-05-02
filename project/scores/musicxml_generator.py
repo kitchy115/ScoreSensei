@@ -337,7 +337,7 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
 
 
 def update_sheet(sheet, path, event):
-    status, note, velocity = event
+    status, note, velocity, event_time = event
     print(f"Event: {event}")
     note = str(note) # make note number string for simplicity
 
@@ -353,7 +353,7 @@ def update_sheet(sheet, path, event):
                     sheet.pedal_markup_buffer = []
 
         # starts at 0, then gets updated IN the loop
-        sheet.note_start_times[note] = [time.time(), sheet.beat, False] # record start time and amount of beats in measure (used by <backup>)
+        sheet.note_start_times[note] = [event_time, sheet.beat, False] # record start time and amount of beats in measure (used by <backup>)
         sheet.dynamic = get_dynamic(velocity)
         print(f"Start time: {sheet.note_start_times[note][0]}, Start beat: {sheet.note_start_times[note][1]}, Dynamic: {sheet.dynamic}, Velocity: {velocity}")
         # rest is calculated by the current notes start time - the last notes end time
@@ -387,7 +387,7 @@ def update_sheet(sheet, path, event):
     elif (status == 128) or (status == 144 and velocity == 0): # key released
         if note in sheet.note_start_times:
             start_time, start_beat, tied = sheet.note_start_times.pop(note, None)
-            end_time = time.time()
+            end_time = event_time
             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
             duration, dotted = get_note_duration(start_time, end_time, sheet.bpm)
             note_name = get_note(int(note), sheet.note_names)
@@ -414,10 +414,10 @@ def update_sheet(sheet, path, event):
                 sheet.backup = True
                 sheet.voice = 2
             
-            sheet.previous_note = (start_time, duration, dotted) # record for next note
+            sheet.previous_note = [start_time, duration, dotted] # record for next note
 
             print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
-            sheet.last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
+            sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
 
             if duration != "unknown":
                 if sheet.last_dynamic != sheet.dynamic and sheet.backup == False:
@@ -451,7 +451,7 @@ def update_sheet(sheet, path, event):
             # TODO generate unique voices for each non-chord note
             # TODO thoroughly test
             start_time, start_beat, tied = sheet.note_start_times[note]
-            end_time = time.time()
+            end_time = event_time
             d = "{:.4f}".format(abs(start_time-end_time)) # we cut off the time at 3 decimals
             duration, dotted = get_note_duration(start_time, end_time, sheet.bpm)
             note_name = get_note(int(note), sheet.note_names)
@@ -495,7 +495,7 @@ def update_sheet(sheet, path, event):
             sheet.previous_note = [start_time, duration, dotted] # record for next note
 
             print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
-            sheet.last_note_end_time = time.time() # update the last_note_end_time to be when the key is released
+            sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
 
             if duration != "unknown":
                 if sheet.last_dynamic != sheet.dynamic and sheet.backup == False:
@@ -515,9 +515,9 @@ def update_sheet(sheet, path, event):
             if leftover > new_beat:
                 new_beat = leftover
             if duration != "unknown":
-                sheet.buffer_note_start_times[note] = (time.time(), leftover, tied)
+                sheet.buffer_note_start_times[note] = (event_time, leftover, tied)
             else:
-                sheet.buffer_note_start_times[note] = (time.time(), new_beat, tied)
+                sheet.buffer_note_start_times[note] = (event_time, new_beat, tied)
         # end of for each loop
 
         if sheet.backup == True:
