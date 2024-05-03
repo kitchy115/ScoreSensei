@@ -146,6 +146,15 @@ def get_staff(octave):
     else:
         return 1 # C4 or greater
 
+def increment_voice(voice):
+    max_voice = 10
+    if voice + 1 > max_voice:
+        voice = 1
+    else:
+        voice += 1
+
+    return voice
+
 def write_backup(beat, xml_fp):
     xml_fp.write("<backup>\n")
     xml_fp.write(f"<duration>{beat}</duration>\n")
@@ -358,7 +367,7 @@ def update_sheet(sheet, path, event):
             if (sheet.last_note_end_time != 0 or sheet.last_note_start_time != 0) and sheet.last_note_start_time - sheet.note_start_times[note][0] < -((60 / sheet.bpm) / 8): #if this is not there, then it prints 0 when there is no rest
                 if sheet.backup == True:
                     sheet.backup = False
-                    sheet.voice = 1
+                    # sheet.voice = increment_voice(sheet.voice)
                 if sheet.chord == True:
                     sheet.chord = False
 
@@ -395,9 +404,10 @@ def update_sheet(sheet, path, event):
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
-                    sheet.chord = True
+                    sheet.chord = True 
                 else:
                     sheet.chord = False
+                    sheet.voice = increment_voice(sheet.voice)
 
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
                     # end backup
@@ -409,7 +419,7 @@ def update_sheet(sheet, path, event):
                     write_backup(sheet.beat - start_beat, xml_fp)
                     sheet.beat = start_beat
                     sheet.backup = True
-                    sheet.voice = 2
+                    # sheet.voice = increment_voice(sheet.voice)
                 
                 sheet.previous_note = [start_time, duration, dotted] # record for next note
 
@@ -471,6 +481,7 @@ def update_sheet(sheet, path, event):
                         sheet.backup = True # true, but no backup is written
                 else:
                     sheet.chord = False
+                    sheet.voice = increment_voice(sheet.voice)
 
                 # might need to change to start_beat > sheet.beat
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
@@ -498,7 +509,7 @@ def update_sheet(sheet, path, event):
                             sheet.l2_note_buffer.append("</backup>\n")
                     sheet.beat = start_beat
                     sheet.backup = True
-                    sheet.voice = 2
+                    # sheet.voice = increment_voice(sheet.voice)
                 
                 sheet.previous_note = [start_time, duration, dotted] # record for next note
 
@@ -531,7 +542,7 @@ def update_sheet(sheet, path, event):
 
             if sheet.backup == True:
                 sheet.backup = False
-                sheet.voice = 1
+                # sheet.voice = increment_voice(sheet.voice)
             if sheet.chord == True:
                 sheet.chord = False
             
