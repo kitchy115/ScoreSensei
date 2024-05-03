@@ -407,7 +407,7 @@ def update_sheet(sheet, path, event):
                     sheet.chord = True 
                 else:
                     sheet.chord = False
-                    sheet.voice = increment_voice(sheet.voice)
+                    sheet.voice += 1
 
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
                     # end backup
@@ -481,7 +481,7 @@ def update_sheet(sheet, path, event):
                         sheet.backup = True # true, but no backup is written
                 else:
                     sheet.chord = False
-                    sheet.voice = increment_voice(sheet.voice)
+                    sheet.voice += 1
 
                 # might need to change to start_beat > sheet.beat
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
