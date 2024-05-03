@@ -146,15 +146,6 @@ def get_staff(octave):
     else:
         return 1 # C4 or greater
 
-def increment_voice(voice):
-    max_voice = 10
-    if voice + 1 > max_voice:
-        voice = 1
-    else:
-        voice += 1
-
-    return voice
-
 def write_backup(beat, xml_fp):
     xml_fp.write("<backup>\n")
     xml_fp.write(f"<duration>{beat}</duration>\n")
@@ -290,52 +281,55 @@ def generate_note(beat, create_measure, duration, note_name, octave, chord, voic
 
 def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_note_buffer, l2_note_buffer, xml_fp):
     # Generate and append MusicXML note entry
-    # TODO add staff support and <forward>
-    if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # create new measure
-        create_measure = True
-        # write leftover tied notes to note_buffer
-        leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
-        duration, dotted = get_closest_note(time_sig_beats * 8 - beat)
-        if leftover != 0:
-            # calc first note
-            l1_duration, l1_dotted = get_closest_note(leftover)
-            leftover = leftover - note_to_value(l1_duration, l1_dotted)
-            l2 = False
+    # TODO add staff support
+    # if duration == "unknown" or duration == "32nd" or (duration == "16th" and not dotted):
+        #return beat, create_measure, l1_note_buffer, l2_note_buffer
+    if duration != "unknown" and duration != "32nd" and (duration != "16th" or dotted):
+        if note_to_value(duration, dotted) + beat >= time_sig_beats * 8: # create new measure
+            create_measure = True
+            # write leftover tied notes to note_buffer
+            leftover = note_to_value(duration, dotted) - (time_sig_beats * 8 - beat)
+            duration, dotted = get_closest_note(time_sig_beats * 8 - beat)
             if leftover != 0:
-                # calc second note
-                l2 = True
-                l2_duration, l2_dotted = get_closest_note(leftover)
-            
-            if l1_duration != "unknown":
-                # write l1 to buffer
-                l1_note_buffer.append("<note>\n")
-                l1_note_buffer.append("<rest/>\n")
-                l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
-                l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
-                if dotted == True:
-                    l1_note_buffer.append(f"<dot/>\n")
-                l1_note_buffer.append("</note>\n")
+                # calc first note
+                l1_duration, l1_dotted = get_closest_note(leftover)
+                leftover = leftover - note_to_value(l1_duration, l1_dotted)
+                l2 = False
+                if leftover != 0:
+                    # calc second note
+                    l2 = True
+                    l2_duration, l2_dotted = get_closest_note(leftover)
+                
+                if l1_duration != "unknown":
+                    # write l1 to buffer
+                    l1_note_buffer.append("<note>\n")
+                    l1_note_buffer.append("<rest/>\n")
+                    l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
+                    l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
+                    if dotted == True:
+                        l1_note_buffer.append(f"<dot/>\n")
+                    l1_note_buffer.append("</note>\n")
 
-            if l2 == True and l2_duration != "unknown":
-                # write l2 to buffer
-                l2_note_buffer.append("<note>\n")
-                l2_note_buffer.append("<rest/>\n")
-                l2_note_buffer.append(f"<duration>{note_to_value(l2_duration, l2_dotted)}</duration>\n")
-                l2_note_buffer.append(f"<type>{l2_duration}</type>\n")
-                if dotted == True:
-                    l2_note_buffer.append(f"<dot/>\n")
-                l2_note_buffer.append("</note>\n")
-    
-    if duration != "unknown":
-        xml_fp.write("<note>\n")
-        xml_fp.write("<rest/>\n")
-        xml_fp.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
-        xml_fp.write(f"<type>{duration}</type>\n")
-        if dotted == True:
-            xml_fp.write(f"<dot/>\n")
-        xml_fp.write("</note>\n")
-        if create_measure == False:
-            beat += note_to_value(duration, dotted)
+                if l2 == True and l2_duration != "unknown":
+                    # write l2 to buffer
+                    l2_note_buffer.append("<note>\n")
+                    l2_note_buffer.append("<rest/>\n")
+                    l2_note_buffer.append(f"<duration>{note_to_value(l2_duration, l2_dotted)}</duration>\n")
+                    l2_note_buffer.append(f"<type>{l2_duration}</type>\n")
+                    if dotted == True:
+                        l2_note_buffer.append(f"<dot/>\n")
+                    l2_note_buffer.append("</note>\n")
+        
+        if duration != "unknown":
+            xml_fp.write("<note>\n")
+            xml_fp.write("<rest/>\n")
+            xml_fp.write(f"<duration>{note_to_value(duration, dotted)}</duration>\n")
+            xml_fp.write(f"<type>{duration}</type>\n")
+            if dotted == True:
+                xml_fp.write(f"<dot/>\n")
+            xml_fp.write("</note>\n")
+            if create_measure == False:
+                beat += note_to_value(duration, dotted)
 
     return beat, create_measure, l1_note_buffer, l2_note_buffer
 
@@ -362,12 +356,10 @@ def update_sheet(sheet, path, event):
             print(f"Start time: {sheet.note_start_times[note][0]}, Start beat: {sheet.note_start_times[note][1]}, Dynamic: {sheet.dynamic}, Velocity: {velocity}")
             # rest is calculated by the current notes start time - the last notes end time
 
-            # prevent chords from cloning rests, might need to tweak -0.06
-            # -((60 / sheet.bpm) / 8) = -0.06
+            # prevent chords from cloning rests
             if (sheet.last_note_end_time != 0 or sheet.last_note_start_time != 0) and sheet.last_note_start_time - sheet.note_start_times[note][0] < -((60 / sheet.bpm) / 8): #if this is not there, then it prints 0 when there is no rest
                 if sheet.backup == True:
                     sheet.backup = False
-                    # sheet.voice = increment_voice(sheet.voice)
                 if sheet.chord == True:
                     sheet.chord = False
 
@@ -400,7 +392,6 @@ def update_sheet(sheet, path, event):
                 staff = get_staff(octave)
 
                 print(f"Previous_note: {sheet.previous_note[0]}")
-                # -((60 / sheet.bpm) / 8) = -0.06
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
@@ -419,7 +410,6 @@ def update_sheet(sheet, path, event):
                     write_backup(sheet.beat - start_beat, xml_fp)
                     sheet.beat = start_beat
                     sheet.backup = True
-                    # sheet.voice = increment_voice(sheet.voice)
                 
                 sheet.previous_note = [start_time, duration, dotted] # record for next note
 
@@ -454,7 +444,7 @@ def update_sheet(sheet, path, event):
             print("Creating new measure")
             new_beat = note_to_value(duration, dotted) - (sheet.time_sig_beats * 8 - sheet.beat) # record leftover from first note
             sheet.beat = sheet.time_sig_beats * 8
-            # sheet.backup = False
+            sheet.backup = False
             print(f"Beat: {sheet.beat}.. Interating through notes")
             for note in sheet.note_start_times:
                 # TODO generate unique voices for each non-chord note
@@ -467,7 +457,6 @@ def update_sheet(sheet, path, event):
                 octave = get_octave(int(note))
                 staff = get_staff(octave)
 
-                # -((60 / sheet.bpm) / 8) = -0.06
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
@@ -509,7 +498,6 @@ def update_sheet(sheet, path, event):
                             sheet.l2_note_buffer.append("</backup>\n")
                     sheet.beat = start_beat
                     sheet.backup = True
-                    # sheet.voice = increment_voice(sheet.voice)
                 
                 sheet.previous_note = [start_time, duration, dotted] # record for next note
 
@@ -524,9 +512,6 @@ def update_sheet(sheet, path, event):
                     sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, sheet.voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, xml_fp)
                     print(f"beat: {sheet.beat} measure: {sheet.measure}")
 
-                    if sheet.backup == True:
-                        sheet.after_backup_beat = sheet.beat + note_to_value(duration, dotted)
-
                 # push copy of note back onto sheet.note_start_times
                 leftover = note_to_value(duration, dotted) - (sheet.time_sig_beats * 8 - sheet.beat)
                 if leftover < 0: # when note duration is 0
@@ -537,12 +522,15 @@ def update_sheet(sheet, path, event):
                     sheet.buffer_note_start_times[note] = (event_time, leftover, tied)
                 else:
                     sheet.buffer_note_start_times[note] = (event_time, new_beat, tied)
+
+                if sheet.backup == True:
+                    sheet.after_backup_beat = sheet.beat + note_to_value(duration, dotted)
+                    sheet.beat = sheet.time_sig_beats * 8 # TODO test
             # end of for each loop
             print("Finished iterating through notes")
 
             if sheet.backup == True:
                 sheet.backup = False
-                # sheet.voice = increment_voice(sheet.voice)
             if sheet.chord == True:
                 sheet.chord = False
             

@@ -1,6 +1,6 @@
 import json
 import threading
-from time import time
+from time import sleep
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -41,11 +41,11 @@ class Sheet:
     pedal_pressed: bool = False
     notes_during_pedal: bool = False
     pedal_markup_buffer: list = field(default_factory=list)
-    after_backup_beat: int = 0
+    after_backup_beat: int = 32
 
 
 lock = threading.Lock()
-
+note_list = []
 
 @login_required(redirect_field_name=None)
 def create_score(request):
@@ -105,15 +105,28 @@ def read_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
+    event = json.loads(request.body)["event"]
+
+    if event[0] == 144:
+        event[3] += 0.05
+        sleep(0.05) # wait for any off_notes
+    print(f"{event} Waiting for lock..")
+    note_list.append(event)
+    print(f"Post Append: {note_list}")
     while lock.locked():
         pass
-
     lock.acquire()
+    print(f"{event} Acquired lock..")
+    event = min(note_list, key=lambda event: event[3]) # return smallest event_time
+    note_list.pop(note_list.index(event)) # remove smallest event_time from note_list
+    print(f"After pop: {note_list}")
+    print(f"{event} Entering musicxml generator..")
+
     score = Score.objects.get(user_id=request.user, score_slug=slug)
 
     with open(score.score_json.name, "r+") as json_fp:
         sheet = Sheet(**json.loads(json_fp.read()))
-        sheet = update_sheet(sheet, score.score_xml.name, **json.loads(request.body))
+        sheet = update_sheet(sheet, score.score_xml.name, event)
 
         json_fp.seek(0)
         json_fp.write(json.dumps(asdict(sheet)))
