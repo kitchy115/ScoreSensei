@@ -1,5 +1,3 @@
-import time
-
 n_to_v = {"quarter": 8,
           "half": 16,
           "whole": 32,
@@ -391,14 +389,16 @@ def update_sheet(sheet, path, event):
                 octave = get_octave(int(note))
                 staff = get_staff(octave)
 
-                print(f"Previous_note: {sheet.previous_note[0]}")
+                print(f"Previous_note: {sheet.previous_note}")
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
-                    sheet.chord = True 
+                    sheet.chord = True
+                    voice = sheet.previous_note[3]
                 else:
                     sheet.chord = False
-                    sheet.voice += 1
+                    # sheet.voice += 1
+                    voice = 1
 
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
                     # end backup
@@ -410,8 +410,10 @@ def update_sheet(sheet, path, event):
                     write_backup(sheet.beat - start_beat, xml_fp)
                     sheet.beat = start_beat
                     sheet.backup = True
+                    sheet.backup_voice += 1
+                    voice = sheet.backup_voice
                 
-                sheet.previous_note = [start_time, duration, dotted] # record for next note
+                sheet.previous_note = [start_time, duration, dotted, voice] # record for next note
 
                 print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
                 sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
@@ -421,7 +423,7 @@ def update_sheet(sheet, path, event):
                         generate_dynamic(sheet.dynamic, staff, xml_fp)
                         sheet.last_dynamic = sheet.dynamic
 
-                    sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, sheet.voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, xml_fp)
+                    sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, xml_fp)
                     print(f"beat: {sheet.beat} measure: {sheet.measure}")
 
         elif status == 176 and note == "64":
@@ -457,20 +459,22 @@ def update_sheet(sheet, path, event):
                 octave = get_octave(int(note))
                 staff = get_staff(octave)
 
+                print(f"Previous_note: {sheet.previous_note}")
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
                     and duration != "unknown"):
                     sheet.chord = True
+                    voice = sheet.previous_note[3]
 
                     # special condition when chord creates new measure
                     if start_beat < sheet.beat and duration != "unknown":
                         print(f"Start beat: {start_beat} < Beat: {sheet.beat} and Chord: True, New beat: {start_beat}")
-                        # sheet.after_backup_beat = sheet.beat
                         sheet.beat = start_beat
                         sheet.backup = True # true, but no backup is written
                 else:
                     sheet.chord = False
-                    sheet.voice += 1
+                    # sheet.voice += 1
+                    voice = 1
 
                 # might need to change to start_beat > sheet.beat
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
@@ -498,8 +502,10 @@ def update_sheet(sheet, path, event):
                             sheet.l2_note_buffer.append("</backup>\n")
                     sheet.beat = start_beat
                     sheet.backup = True
+                    sheet.backup_voice += 1
+                    voice = sheet.backup_voice
                 
-                sheet.previous_note = [start_time, duration, dotted] # record for next note
+                sheet.previous_note = [start_time, duration, dotted, voice] # record for next note
 
                 print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
                 sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
@@ -509,7 +515,7 @@ def update_sheet(sheet, path, event):
                         generate_dynamic(sheet.dynamic, staff, xml_fp)
                         sheet.last_dynamic = sheet.dynamic
 
-                    sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, sheet.voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, xml_fp)
+                    sheet.beat, sheet.create_measure, sheet.l1_note_buffer, sheet.l2_note_buffer, tied = generate_note(sheet.beat, sheet.create_measure, duration, note_name, octave, sheet.chord, voice, dotted, staff, sheet.time_sig_beats, sheet.l1_note_buffer, sheet.l2_note_buffer, tied, xml_fp)
                     print(f"beat: {sheet.beat} measure: {sheet.measure}")
 
                 # push copy of note back onto sheet.note_start_times
@@ -546,6 +552,8 @@ def update_sheet(sheet, path, event):
             sheet.l2_note_buffer = [] # clear buffer
             sheet.note_start_times = sheet.buffer_note_start_times
             sheet.buffer_note_start_times = {} # clear buffer dict
+            sheet.after_backup_beat = 32
+            # sheet.backup_voice = 1
 
     # write to json file
     return sheet

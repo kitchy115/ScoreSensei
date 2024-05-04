@@ -24,11 +24,11 @@ class Sheet:
     measure: int = 1
     previous_note: list = field(
         default_factory=list
-    )  # [start_time, start_beat, tied]
+    )  # [start_time, duration, dotted, voice]
     chord: bool = False
-    backup: bool = False  # flag for when a <backup> is used (needed to know when to place a <forward>)
+    backup: bool = False  # flag for when a <backup> is used
     last_note_start_time: float = 0
-    voice: int = 1
+    # voice: int = 1
     dynamic: str = "unknown"
     last_dynamic: str = "unknown"
     create_measure: bool = False
@@ -42,10 +42,12 @@ class Sheet:
     notes_during_pedal: bool = False
     pedal_markup_buffer: list = field(default_factory=list)
     after_backup_beat: int = 32
+    backup_voice: int = 1
 
 
 lock = threading.Lock()
 note_list = []
+
 
 @login_required(redirect_field_name=None)
 def create_score(request):

@@ -119,8 +119,6 @@
         })
         
         function renderSheet() {
-          fetch("{% url 'scores:get_xml' slug=score.score_slug %}")
-        
           osmd.load("{% url 'scores:get_xml' slug=score.score_slug %}").then(function () {
             osmd.render()
           })
