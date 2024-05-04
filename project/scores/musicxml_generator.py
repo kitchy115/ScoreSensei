@@ -91,19 +91,19 @@ def get_remainder_notes(leftover):
 def get_closest_note(leftover):
     if leftover >= 32:
         return "whole", False
-    elif leftover >= (16 + 8):
+    elif leftover >= 24:
         return "half", True
     elif leftover >= 16:
         return "half", False
-    elif leftover >= (8 + 4):
+    elif leftover >= 12:
         return "quarter", True
     elif leftover >= 8:
         return "quarter", False
-    elif leftover >= (4 + 2):
+    elif leftover >= 6:
         return "eighth", True
     elif leftover >= 4:
         return "eighth", False
-    elif leftover >= (2 + 1):
+    elif leftover >= 3:
         return "16th", True
     elif leftover >= 2:
         return "16th", False
@@ -304,7 +304,7 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
                     l1_note_buffer.append("<rest/>\n")
                     l1_note_buffer.append(f"<duration>{note_to_value(l1_duration, l1_dotted)}</duration>\n")
                     l1_note_buffer.append(f"<type>{l1_duration}</type>\n")
-                    if dotted == True:
+                    if l1_dotted == True:
                         l1_note_buffer.append(f"<dot/>\n")
                     l1_note_buffer.append("</note>\n")
 
@@ -314,7 +314,7 @@ def generate_rest(beat, create_measure, duration, dotted, time_sig_beats, l1_not
                     l2_note_buffer.append("<rest/>\n")
                     l2_note_buffer.append(f"<duration>{note_to_value(l2_duration, l2_dotted)}</duration>\n")
                     l2_note_buffer.append(f"<type>{l2_duration}</type>\n")
-                    if dotted == True:
+                    if l2_dotted == True:
                         l2_note_buffer.append(f"<dot/>\n")
                     l2_note_buffer.append("</note>\n")
         
@@ -553,7 +553,7 @@ def update_sheet(sheet, path, event):
             sheet.note_start_times = sheet.buffer_note_start_times
             sheet.buffer_note_start_times = {} # clear buffer dict
             sheet.after_backup_beat = 32
-            # sheet.backup_voice = 1
+            sheet.backup_voice = 1
 
     # write to json file
     return sheet

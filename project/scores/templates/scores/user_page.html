@@ -42,6 +42,7 @@
             headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
             body: JSON.stringify({ event: event })
         })
+        osmd.render()
       })
 
       mySynth.channels[1].addListener('noteoff', (e) => {
@@ -52,6 +53,7 @@
             headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
             body: JSON.stringify({ event: event })
         })
+        osmd.render()
       })
       
       /*
