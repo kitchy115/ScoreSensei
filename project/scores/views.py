@@ -45,8 +45,10 @@ class Sheet:
     backup_voice: int = 1
 
 
-lock = threading.Lock()
 note_list = []
+
+condition = threading.Condition()
+modified = False
 
 
 @login_required(redirect_field_name=None)
@@ -107,34 +109,35 @@ def read_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
-    event = json.loads(request.body)["event"]
+    with condition:
+        event = json.loads(request.body)["event"]
 
-    if event[0] == 144:
-        event[3] += 0.05
-        sleep(0.05)  # wait for any off_notes
-    print(f"{event} Waiting for lock..")
-    note_list.append(event)
-    print(f"Post Append: {note_list}")
-    while lock.locked():
-        pass
-    lock.acquire()
-    print(f"{event} Acquired lock..")
-    event = min(note_list, key=lambda event: event[3])  # return smallest event_time
-    note_list.pop(note_list.index(event))  # remove smallest event_time from note_list
-    print(f"After pop: {note_list}")
-    print(f"{event} Entering musicxml generator..")
+        if event[0] == 144:
+            event[3] += 0.05
+            sleep(0.05)  # wait for any off_notes
+        note_list.append(event)
+        print(f"Post Append: {note_list}")
+        event = min(note_list, key=lambda event: event[3])  # return smallest event_time
+        note_list.pop(
+            note_list.index(event)
+        )  # remove smallest event_time from note_list
+        print(f"After pop: {note_list}")
+        print(f"{event} Entering musicxml generator..")
 
-    score = Score.objects.get(user_id=request.user, score_slug=slug)
+        score = Score.objects.get(user_id=request.user, score_slug=slug)
 
-    with open(score.score_json.name, "r+") as json_fp:
-        sheet = Sheet(**json.loads(json_fp.read()))
-        sheet = update_sheet(sheet, score.score_xml.name, event)
+        with open(score.score_json.name, "r+") as json_fp:
+            sheet = Sheet(**json.loads(json_fp.read()))
+            sheet = update_sheet(sheet, score.score_xml.name, event)
 
-        json_fp.seek(0)
-        json_fp.write(json.dumps(asdict(sheet)))
-        json_fp.truncate()
+            json_fp.seek(0)
+            json_fp.write(json.dumps(asdict(sheet)))
+            json_fp.truncate()
 
-    lock.release()
+        global modified
+
+        modified = True
+        condition.notify()
 
     return HttpResponse(status=200)
 
@@ -148,7 +151,15 @@ def delete_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def get_xml(request, slug):
-    score = Score.objects.get(user_id=request.user, score_slug=slug)
+    with condition:
+        global modified
+        while not modified:
+            condition.wait()
+
+        score = Score.objects.get(user_id=request.user, score_slug=slug)
+
+        modified = False
+
     return HttpResponse(open(score.score_xml.name).read(), content_type="text/xml")
 
 

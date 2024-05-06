@@ -30,30 +30,40 @@
       pageFormat: 'A4_P'
     })
     
-    window.onload = function () {
-      renderSheet()
-    }
+    osmd.load("{% url 'scores:download_score' slug=score.score_slug %}").then(function () {
+      osmd.render()
+    })
   </script>
 
   <!-- SHEET MUSIC SETUP -->
   <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
   <script>
-    let poll = null
-    
     document.getElementById('startBtn').addEventListener('click', function () {
-      if (!poll) {
-        WebMidi.enable()
-          .then(onEnabled)
-          .catch((err) => alert(err))
-        poll = setInterval(renderSheet, 1000)
-      }
+      WebMidi.enable()
+        .then(onEnabled)
+        .catch((err) => alert(err))
+      pollServer()
     })
     
     document.getElementById('stopBtn').addEventListener('click', function () {
       WebMidi.disable()
-      clearInterval(poll)
-      poll = null
     })
+    
+    function pollServer() {
+      fetch("{% url 'scores:get_xml' slug=score.score_slug %}")
+        .then((response) => response.text())
+        .then((xml) => {
+          if (xml) {
+            osmd.load(xml).then(function () {
+              osmd.render()
+            })
+          }
+          pollServer()
+        })
+        .catch((error) => {
+          console.error('Error during long polling: ', error)
+        })
+    }
     
     function onEnabled() {
       const mySynth = WebMidi.inputs[0]
@@ -78,12 +88,6 @@
           headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
           body: JSON.stringify({ event: event })
         })
-      })
-    }
-    
-    function renderSheet() {
-      osmd.load("{% url 'scores:get_xml' slug=score.score_slug %}").then(function () {
-        osmd.render()
       })
     }
   </script>
