@@ -2,9 +2,10 @@
 
 import autoslug.fields
 import django.db.models.deletion
-import scores.models
 from django.conf import settings
 from django.db import migrations, models
+
+import scores.models
 
 
 class Migration(migrations.Migration):
