@@ -392,12 +392,11 @@ def update_sheet(sheet, path, event):
                 print(f"Previous_note: {sheet.previous_note}")
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
-                    and duration != "unknown"):
+                    and sheet.previous_note[4] == start_beat and duration != "unknown"): # TODO test start_beat condition
                     sheet.chord = True
                     voice = sheet.previous_note[3]
                 else:
                     sheet.chord = False
-                    # sheet.voice += 1
                     voice = 1
 
                 if start_beat != sheet.beat and duration != "unknown" and sheet.backup == True and sheet.chord == False:
@@ -413,9 +412,9 @@ def update_sheet(sheet, path, event):
                     sheet.backup_voice += 1
                     voice = sheet.backup_voice
                 
-                sheet.previous_note = [start_time, duration, dotted, voice] # record for next note
+                sheet.previous_note = [start_time, duration, dotted, voice, start_beat] # record for next note
 
-                print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
+                print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Start Beat: {start_beat}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
                 sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
 
                 if duration != "unknown":
@@ -462,7 +461,7 @@ def update_sheet(sheet, path, event):
                 print(f"Previous_note: {sheet.previous_note}")
                 if (sheet.previous_note[0] != None and sheet.previous_note[0] - start_time > -((60 / sheet.bpm) / 8)
                     and sheet.previous_note[1] == duration and sheet.previous_note[2] == dotted
-                    and duration != "unknown"):
+                    and sheet.previous_note[4] == start_beat and duration != "unknown"): # TODO test start_beat condition
                     sheet.chord = True
                     voice = sheet.previous_note[3]
 
@@ -473,7 +472,6 @@ def update_sheet(sheet, path, event):
                         sheet.backup = True # true, but no backup is written
                 else:
                     sheet.chord = False
-                    # sheet.voice += 1
                     voice = 1
 
                 # might need to change to start_beat > sheet.beat
@@ -505,9 +503,9 @@ def update_sheet(sheet, path, event):
                     sheet.backup_voice += 1
                     voice = sheet.backup_voice
                 
-                sheet.previous_note = [start_time, duration, dotted, voice] # record for next note
+                sheet.previous_note = [start_time, duration, dotted, voice, start_beat] # record for next note
 
-                print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
+                print (f"Note: {note_name}, Octave: {octave}, Duration: {duration}, Dotted: {dotted}, Start Beat: {start_beat}, Exact Duration: {d} seconds, Chord: {sheet.chord}")
                 sheet.last_note_end_time = event_time # update the last_note_end_time to be when the key is released
 
                 if duration != "unknown":
@@ -531,6 +529,8 @@ def update_sheet(sheet, path, event):
 
                 if sheet.backup == True:
                     sheet.after_backup_beat = sheet.beat + note_to_value(duration, dotted)
+                    if sheet.after_backup_beat > sheet.time_sig_beats * 8:
+                        sheet.after_backup_beat = sheet.time_sig_beats * 8
                     sheet.beat = sheet.time_sig_beats * 8 # TODO test
             # end of for each loop
             print("Finished iterating through notes")

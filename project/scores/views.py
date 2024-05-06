@@ -24,7 +24,7 @@ class Sheet:
     measure: int = 1
     previous_note: list = field(
         default_factory=list
-    )  # [start_time, duration, dotted, voice]
+    )  # [start_time, duration, dotted, voice, start_beat]
     chord: bool = False
     backup: bool = False  # flag for when a <backup> is used
     last_note_start_time: float = 0
@@ -80,7 +80,7 @@ def create_score(request):
             time_sig_beats=int(request.POST["Time Signature"]),
             bpm=int(request.POST["bpm"]),
             note_names=get_note_names(request.POST["key"]),
-            previous_note=[None, None, None],
+            previous_note=[None, None, None, None],
         )
         json_fp.write(json.dumps(asdict(sheet)))
 
