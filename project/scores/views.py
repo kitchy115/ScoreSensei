@@ -57,11 +57,8 @@ def create_score(request):
     username = request.user.username
     score_title = request.POST["score-title"].lower()
 
-    BASE_DIR = Path().resolve() / "files" / username
-    BASE_DIR.mkdir(parents=True, exist_ok=True)
-
-    xml_path = BASE_DIR / f"{score_title}.musicxml"
-    json_path = BASE_DIR / f"{score_title}.json"
+    xml_path = Path(f"{score_title}.musicxml")
+    json_path = Path(f"{score_title}.json")
 
     # django creates a copy of the file for the db
     with open(xml_path, "w+") as xml_fp, open(json_path, "w+") as json_fp:
@@ -126,9 +123,9 @@ def update_score(request, slug):
 
         score = Score.objects.get(user_id=request.user, score_slug=slug)
 
-        with open(score.score_json.name, "r+") as json_fp:
+        with open(score.score_json.path, "r+") as json_fp:
             sheet = Sheet(**json.loads(json_fp.read()))
-            sheet = update_sheet(sheet, score.score_xml.name, event)
+            sheet = update_sheet(sheet, score.score_xml.path, event)
 
             json_fp.seek(0)
             json_fp.write(json.dumps(asdict(sheet)))
@@ -160,11 +157,11 @@ def get_xml(request, slug):
 
         modified = False
 
-    return HttpResponse(open(score.score_xml.name).read(), content_type="text/xml")
+    return HttpResponse(open(score.score_xml.path).read(), content_type="text/xml")
 
 
 @login_required(redirect_field_name=None)
 def download_score(request, slug):
     score = Score.objects.get(user_id=request.user, score_slug=slug)
-    xml_fp = open(score.score_xml.name, "rb")
+    xml_fp = open(score.score_xml.path, "rb")
     return FileResponse(xml_fp, filename=f"{score.score_slug}.musicxml")
