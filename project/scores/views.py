@@ -1,8 +1,8 @@
 import json
 import threading
-from time import sleep
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from time import sleep
 
 from django.contrib.auth.decorators import login_required
 from django.core.files import File
@@ -111,7 +111,7 @@ def update_score(request, slug):
 
     if event[0] == 144:
         event[3] += 0.05
-        sleep(0.05) # wait for any off_notes
+        sleep(0.05)  # wait for any off_notes
     print(f"{event} Waiting for lock..")
     note_list.append(event)
     print(f"Post Append: {note_list}")
@@ -119,8 +119,8 @@ def update_score(request, slug):
         pass
     lock.acquire()
     print(f"{event} Acquired lock..")
-    event = min(note_list, key=lambda event: event[3]) # return smallest event_time
-    note_list.pop(note_list.index(event)) # remove smallest event_time from note_list
+    event = min(note_list, key=lambda event: event[3])  # return smallest event_time
+    note_list.pop(note_list.index(event))  # remove smallest event_time from note_list
     print(f"After pop: {note_list}")
     print(f"{event} Entering musicxml generator..")
 

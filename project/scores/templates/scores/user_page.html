@@ -4,128 +4,87 @@
 
 {% block content %}
   <!-- BUTTONS -->
-  <!-- back button to send user back to dashboard -->
   <a href="{% url 'accounts:dashboard' username=user.username %}" class="btn mt-4">BACK</a>
 
-  <!-- BEGIN RECORDING BUTTON -->
-  <!-- need to mess with intervals so server doesn't keep running due to setInterval function -->
-  <!-- is there a way to stop interval so server doesn't keep running -->
-  <button id="start" class="btn mt-4">BEGIN RECORDING</button>
-  <!-- webmidi.enable() -->
-  <!-- enable setInterval -->
+  <button id="startBtn" class="btn mt-4">BEGIN RECORDING</button>
 
-  <!-- same idea with stop recording -->
-  <!-- would make server stop running -->
-  <button id="stop" class="btn mt-4">STOP RECORDING</button>
-  <!-- webmidi.disable() -->
-  <!-- disable setInterval -->
+  <button id="stopBtn" class="btn mt-4">STOP RECORDING</button>
 
   <a href="{% url 'scores:download_score' slug=score.score_slug %}" class="btn mt-4">Download Score</a>
 
   <!-- MAIN CONTENT -->
 
-  <!-- SHEET MUSIC SETUP -->
-  <!-- not sure if this goes here -->
-  <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
-  <script type="module">
-    function onEnabled() {
-      const mySynth = WebMidi.inputs[0]
-    
-      var csrftoken = getCookie('csrftoken')
-    
-      
-      mySynth.channels[1].addListener('noteon', (e) => {
-          event = e.message.data
-          event.push((new Date()).getTime() / 1000)
-          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
-            method: 'POST',
-            headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
-            body: JSON.stringify({ event: event })
-        })
-        osmd.render()
-      })
-
-      mySynth.channels[1].addListener('noteoff', (e) => {
-          event = e.message.data
-          event.push((new Date()).getTime() / 1000)
-          fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
-            method: 'POST',
-            headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
-            body: JSON.stringify({ event: event })
-        })
-        osmd.render()
-      })
-      
-      /*
-      mySynth.channels[1].addListener('midimessage', (e) => {
-          if (e.message.data[0] == 144 || e.message.data[0] == 128)
-          {
-            event = e.message.data
-            event.push((new Date()).getTime() / 1000)
-            fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
-              method: 'POST',
-              headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
-              body: JSON.stringify({ event: event })
-            })
-          }
-      })
-      */
-    }
-    
-    function getCookie(name) {
-      var cookieValue = null
-      if (document.cookie && document.cookie !== '') {
-        var cookies = document.cookie.split(';')
-        for (var i = 0; i < cookies.length; i++) {
-          var cookie = cookies[i].trim()
-          if (cookie.substring(0, name.length + 1) === name + '=') {
-            cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
-            break
-          }
-        }
-      }
-      return cookieValue
-    }
-    
-    let poll = null
-    
-    function start() {
-      WebMidi.enable()
-        .then(onEnabled)
-        .catch((err) => alert(err))
-    
-      poll = setInterval(renderSheet, 1000)
-    }
-    
-    function stop() {
-      WebMidi.disable()
-    
-      clearInterval(poll)
-    }
-    
-    document.getElementById('start').addEventListener('click', start)
-    document.getElementById('stop').addEventListener('click', stop)
-  </script>
-
   <!-- DISPLAY -->
   <div>
     <div class="sheet-music-container">
-      <script src="{% static 'main/opensheetmusicdisplay.min.js' %}"></script>
       <div id="osmdCanvas"></div>
-      <script>
-        var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('osmdCanvas', {
-          autoResize: true,
-          backend: 'svg',
-          drawTitle: false,
-          pageFormat: 'A4_P'
-        })
-        
-        function renderSheet() {
-          osmd.load("{% url 'scores:get_xml' slug=score.score_slug %}").then(function () {
-            osmd.render()
-          })
-        }
-      </script>
     </div>
   </div>
+
+  <script src="{% static 'main/opensheetmusicdisplay.min.js' %}"></script>
+  <script>
+    var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('osmdCanvas', {
+      autoResize: true,
+      backend: 'svg',
+      drawTitle: false,
+      pageFormat: 'A4_P'
+    })
+    
+    window.onload = function () {
+      renderSheet()
+    }
+  </script>
+
+  <!-- SHEET MUSIC SETUP -->
+  <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+  <script>
+    let poll = null
+    
+    document.getElementById('startBtn').addEventListener('click', function () {
+      if (!poll) {
+        WebMidi.enable()
+          .then(onEnabled)
+          .catch((err) => alert(err))
+        poll = setInterval(renderSheet, 1000)
+      }
+    })
+    
+    document.getElementById('stopBtn').addEventListener('click', function () {
+      WebMidi.disable()
+      clearInterval(poll)
+      poll = null
+    })
+    
+    function onEnabled() {
+      const mySynth = WebMidi.inputs[0]
+    
+      var csrftoken = '{{ csrf_token }}'
+    
+      mySynth.channels[1].addListener('noteon', (e) => {
+        event = e.message.data
+        event.push(new Date().getTime() / 1000)
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: event })
+        })
+      })
+    
+      mySynth.channels[1].addListener('noteoff', (e) => {
+        event = e.message.data
+        event.push(new Date().getTime() / 1000)
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: event })
+        })
+      })
+    }
+    
+    function renderSheet() {
+      osmd.load("{% url 'scores:get_xml' slug=score.score_slug %}").then(function () {
+        osmd.render()
+      })
+    }
+  </script>
 {% endblock %}
