@@ -23,11 +23,12 @@ source /home/ec2-user/venv/bin/activate
 python3.11 -m pip install -r /home/ec2-user/project/requirements.txt
 
 
-# Configure static files
+# Configure django
 # --------------------------------------------------------------------------------
 
 python3.11 /home/ec2-user/project/manage.py collectstatic --clear --noinput
 
+python3.11 /home/ec2-user/project/manage.py migrate
 
 # Configure permissions
 # --------------------------------------------------------------------------------

@@ -38,6 +38,7 @@ Resources:
             yum:
               nginx: []
               python3.11: []
+              sqlite-devel: []
           commands:
             01-create-venv:
               command: "python3.11 -m venv /home/ec2-user/venv"
