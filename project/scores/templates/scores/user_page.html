@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+  <!-- BUTTONS -->
+  <a href="{% url 'accounts:dashboard' username=user.username %}" class="btn mt-4">BACK</a>
+
+  <button id="startBtn" class="btn mt-4">BEGIN RECORDING</button>
+
+  <button id="stopBtn" class="btn mt-4">STOP RECORDING</button>
+
+  <a href="{% url 'scores:download_score' slug=score.score_slug %}" class="btn mt-4">Download Score</a>
+
+  <!-- MAIN CONTENT -->
+
+  <!-- DISPLAY -->
+  <div>
+    <div class="sheet-music-container">
+      <div id="osmdCanvas"></div>
+    </div>
+  </div>
+
+  <script src="{% static 'main/opensheetmusicdisplay.min.js' %}"></script>
+  <script>
+    var osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay('osmdCanvas', {
+      autoResize: true,
+      backend: 'svg',
+      drawTitle: false,
+      pageFormat: 'A4_P'
+    })
+    
+    osmd.load("{% url 'scores:download_score' slug=score.score_slug %}").then(function () {
+      osmd.render()
+    })
+  </script>
+
+  <!-- SHEET MUSIC SETUP -->
+  <script src="https://cdn.jsdelivr.net/npm/webmidi@latest/dist/iife/webmidi.iife.js"></script>
+  <script>
+    document.getElementById('startBtn').addEventListener('click', function () {
+      WebMidi.enable()
+        .then(onEnabled)
+        .catch((err) => alert(err))
+      pollServer()
+    })
+    
+    document.getElementById('stopBtn').addEventListener('click', function () {
+      WebMidi.disable()
+    })
+    
+    function pollServer() {
+      fetch("{% url 'scores:get_xml' slug=score.score_slug %}")
+        .then((response) => response.text())
+        .then((xml) => {
+          if (xml) {
+            osmd.load(xml).then(function () {
+              osmd.render()
+            })
+          }
+          pollServer()
+        })
+        .catch((error) => {
+          console.error('Error during long polling: ', error)
+        })
+    }
+    
+    function onEnabled() {
+      const mySynth = WebMidi.inputs[0]
+    
+      var csrftoken = '{{ csrf_token }}'
+    
+      mySynth.channels[1].addListener('noteon', (e) => {
+        event = e.message.data
+        event.push(new Date().getTime() / 1000)
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: event })
+        })
+      })
+    
+      mySynth.channels[1].addListener('noteoff', (e) => {
+        event = e.message.data
+        event.push(new Date().getTime() / 1000)
+        fetch("{% url 'scores:update_score' slug=score.score_slug %}", {
+          method: 'POST',
+          headers: { 'Content-type': 'application/json', 'X-CSRFToken': csrftoken },
+          body: JSON.stringify({ event: event })
+        })
+      })
+    }
+  </script>
+{% endblock %}

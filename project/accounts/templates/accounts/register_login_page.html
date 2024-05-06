@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  {% comment %}FORM ALERTS{% endcomment %}
+  {% if form.errors %}
+    {% for field in form %}
+      {% for error in field.errors %}
+        <h1>{{ error }}</h1>
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+
+  <!-- MAIN CONTENT -->
+
+  <div class="section">
+    <div class="container">
+      <div class="row full-height justify-content-center">
+        <div class="col-12 text-center align-self-center py-5">
+          <div class="section pb-5 pt-5 pt-sm-2 text-center">
+            <!-- re add center here -->
+            <input class="checkbox" type="checkbox" id="reg-log" name="reg-log" />
+            <label for="reg-log"></label>
+            <div class="card-3d-wrap mx-auto">
+              <div class="card-3d-wrapper">
+                <div class="card-front">
+                  <div class="center-wrap">
+                    <div class="section text-center">
+                      <!-- LOGIN FORM -->
+                      <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group mt-2" style="width: 275px;">
+                          <h4 class="mb-4 pb-3">Log In</h4>
+                          <input type="text" class="form-style" name="username" placeholder="Username" required />
+                          <input type="password" class="form-style" name="password" placeholder="Password" required />
+                          <button type="submit" class="btn mt-4" name="submit" value="login">Submit</button>
+                        </div>
+                      </form>
+                      <!-- <p class="mb-0 mt-4 text-center"><a href="login_page.html" class="link">Forgot your password?</a></p> -->
+                    </div>
+                  </div>
+                </div>
+                <div class="card-back">
+                  <div class="center-wrap">
+                    <div class="section text-center">
+                      <!-- REGISTER FORM -->
+                      <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group mt-2" style="width: 275px;">
+                          <h4 class="mb-4 pb-3">Sign Up</h4>
+                          {{ form.username }}
+                          {{ form.password1 }}
+                          {{ form.password2 }}
+                          <button type="submit" class="btn mt-4" name="submit" value="register">Register</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Prevents form resubmission when page is refreshed
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.href)
+    }
+    
+    // Function to save checkbox states to Local Storage
+    function saveCheckboxStates() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+      checkboxes.forEach((checkbox) => {
+        localStorage.setItem(checkbox.id, checkbox.checked)
+      })
+    }
+    
+    // Function to load checkbox states from Local Storage
+    function loadCheckboxStates() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+      checkboxes.forEach((checkbox) => {
+        const savedState = localStorage.getItem(checkbox.id)
+        if (savedState !== null) {
+          checkbox.checked = savedState === 'true'
+        }
+      })
+    }
+    
+    // Attach event listener to the checkboxes to save their states
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]')
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener('change', saveCheckboxStates)
+    })
+    
+    // Load checkbox states on page load
+    document.addEventListener('DOMContentLoaded', loadCheckboxStates)
+  </script>
+{% endblock %}

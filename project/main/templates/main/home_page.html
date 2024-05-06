@@ -3,21 +3,27 @@
 {% block content %}
   <!-- MAIN CONTENT -->
 
-  <!-- can add images here -->
-  <div style="background-color: #2C3526; height: 700px;">
-    <h1 style="font-size: 50px; font-family: Sedgwick; color: white; text-align: center; padding-top: 50px;">WHAT IS SCORE SENSEI?</h1>
-    <p style="line-height: 2.0; font-size:20px; font-family: Tech; color: white; text-align: center;">Score Sensei offers the automation that AI transcriptions have in order to free up time for musicians. Our AI model allows musicians to have features capable of transcribing music live, while also continuing to offer an in-app composition editor to allow the musician to fix any mistakes the AI makes. Which will give our users a fully notated piece of sheet music of their work giving countless musicians more time to perfect their craft.</p>
+  <div style="background-color: #b3c2a8; height: 700px;">
+    <h1 style="font-size: 50px; font-family: Tech; color: white; text-align: left; padding-top: 50px;">WHAT IS SCORE SENSEI?</h1>
+    <p style="line-height: 2.0; font-size:20px; font-family: Tech; color: white; text-align: left;">Score Sensei offers the automation that AI transcriptions have in order to free up time for musicians. Our AI model allows musicians to have features capable of transcribing music live, while also continuing to offer an in-app composition editor to allow the musician to fix any mistakes the AI makes. Which will give our users a fully notated piece of sheet music of their work giving countless musicians more time to perfect their craft.</p>
 
+    <h2 style = "font-size: 50px; font-family: Tech; color: white; text-align: left;">KEY FEATURES</h2>
+    <ul class="b" style ="text-align: left;">
+      <li>Free to use software</li>
+      <li>Easy to use software</li>
+      <li>Elegant user interface</li>
+      <li>Easy Access with smooth login and signup process</li>
+      <li>Precise and accurate note recognition</li>
+      <li>Preserve your musical compositions with recording and storage functionalities</li>
+      <li>Intuitive learning through the art of reading sheet music</li>
+    </ul>
+    
     <!-- IMAGES OR VIDEO HERE -->
 
     <!-- BEGIN BUTTON -->
     <div class="bcenter">
-      <a href="{% url 'main:login' %}" class="btn mt-4">ENTER OUR DOJO</a>
+      <a href="{% url 'accounts:login' %}" class="btn mt-4">ENTER OUR DOJO</a>
     </div>
   </div>
 
-  <!-- FOOTER -->
-  <footer style="height:auto; background-color: #2C3526;">
-    <h1 style="font-family: Sedgwick; color: white; text-align: center;">Thanks for visisting!</h1>
-  </footer>
 {% endblock %}
