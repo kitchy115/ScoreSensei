@@ -106,13 +106,15 @@ def read_score(request, slug):
 
 @login_required(redirect_field_name=None)
 def update_score(request, slug):
+    event = json.loads(request.body)["event"]
+    if event[0] == 144:
+        event[3] += 0.05
+        sleep(0.05)  # wait for any off_notes
+    note_list.append(event)
+    
     with condition:
-        event = json.loads(request.body)["event"]
 
-        if event[0] == 144:
-            event[3] += 0.05
-            sleep(0.05)  # wait for any off_notes
-        note_list.append(event)
+        
         print(f"Post Append: {note_list}")
         event = min(note_list, key=lambda event: event[3])  # return smallest event_time
         note_list.pop(
