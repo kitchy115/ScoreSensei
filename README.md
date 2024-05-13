@@ -29,7 +29,7 @@ Initialize the database:
 python manage.py migrate
 ```
 
-```bash
+```
 $ python manage.py migrate
 Operations to perform:
   Apply all migrations: admin, auth, contenttypes, scores, sessions
@@ -49,7 +49,7 @@ Run the web application:
 python manage.py runserver
 ```
 
-```bash
+```
 $ python manage.py runserver
 Watching for file changes with StatReloader
 Performing system checks...
