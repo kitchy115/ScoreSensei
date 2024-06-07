@@ -1,20 +1,16 @@
 # ScoreSensei
 
 ## Preview
-Home Screen
-
+- Home Screen
 ![homescreen](https://github.com/kitchy115/ScoreSensei/assets/113550578/8cf2886f-3fa0-4255-8dc5-0c7641198d30)
 
-Login
-
+- Login
 ![login](https://github.com/kitchy115/ScoreSensei/assets/113550578/ea7ac7ea-da41-4ea1-991d-d83889786e5d)
 
-User Page
-
+- User Page
 ![userpage](https://github.com/kitchy115/ScoreSensei/assets/113550578/5c286645-3868-4237-92d8-b3f037fe0eb1)
 
-Dashboard
-
+- Dashboard
 ![dashboard](https://github.com/kitchy115/ScoreSensei/assets/113550578/7a3b5dbb-9142-48dc-a87c-840bde58694b)
 
 ## Requirements
